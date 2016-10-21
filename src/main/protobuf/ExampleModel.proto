@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package prowse.akka;
+
+message ExampleModel {
+    string message = 1;
+}
