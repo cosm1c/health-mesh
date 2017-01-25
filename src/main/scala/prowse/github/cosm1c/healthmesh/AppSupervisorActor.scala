@@ -11,7 +11,7 @@ import akka.http.scaladsl.server.PathMatchers.RemainingPath
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
 import prowse.BuildInfoHelper
-import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController.NodeInfo
+import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController.{NodeInfo, UnknownHealth}
 import prowse.github.cosm1c.healthmesh.deltastream.{DeltaStreamController, MeshUpdateWebsocketFlow}
 import prowse.github.cosm1c.healthmesh.poller.HealthPollerMediatorActor
 
@@ -28,12 +28,12 @@ class AppSupervisorActor extends Actor with ActorLogging {
 
     private val deltaStreamController = new DeltaStreamController
     private val healthPollerMediatorActor = context.actorOf(HealthPollerMediatorActor.props(deltaStreamController), "healthPollerMediatorActor")
-    // TODO: obtain list of nodes to poll and replace this debug code
-    private val numRandomNodes = 500
+    // TODO: obtain nodes from somewhere - this is randomly generate
+    private val numRandomNodes = 1000
     deltaStreamController.add(0 to numRandomNodes map { id =>
         NodeInfo(
             id.toString,
-            isHealthy = false,
+            UnknownHealth,
             Seq.fill(Random.nextInt(5))(Random.nextInt(numRandomNodes).toString),
             Instant.now)
     })

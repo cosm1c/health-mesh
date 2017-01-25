@@ -1,12 +1,12 @@
 import {WebSocketSubject, WebSocketSubjectConfig} from 'rxjs/observable/dom/WebSocketSubject';
-import {Delta} from './NodeInfo';
+import {Delta, NodeInfo} from './NodeInfo';
+import {SigmaDigraph} from './sigma';
 
 require('../less/main.less');
 
 // Used by DefinePlugin
 declare const ENV: string;
 
-/*
 function getElementByIdOrThrowError(elementId: string): HTMLElement {
   const el = document.getElementById(elementId);
   if (!el) {
@@ -16,7 +16,6 @@ function getElementByIdOrThrowError(elementId: string): HTMLElement {
 }
 
 const digraphEl = getElementByIdOrThrowError('digraph');
-*/
 
 function calcWsUrl(): string {
   if (ENV === 'development') {
@@ -58,13 +57,16 @@ window.onload = () => {
   console.info('onload');
   const socket: WebSocketSubject<Delta> = WebSocketSubject.create(webSocketSubjectConfig);
 
+  let digraph = new SigmaDigraph(digraphEl);
+
   socket.subscribe(
     // next
     function (delta: Delta) {
       // console.debug('Delta', delta);
-      const addNodes = Object.keys(delta.add).map((id) => delta.add[id]);
-      const delNodes = Object.keys(delta.del).map((id) => delta.del[id]);
-      console.debug('add:', addNodes, ' del:', delNodes);
+      const addNodes: NodeInfo[] = Object.keys(delta.add).map((id) => delta.add[id]);
+      const delNodes: NodeInfo[] = Object.keys(delta.del).map((id) => delta.del[id]);
+      // console.debug('add:', addNodes, ' del:', delNodes);
+      digraph.update(addNodes, delNodes);
     },
     // error
     function (error: any) {

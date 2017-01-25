@@ -13,15 +13,7 @@ Tech Stack:
 * [Webpack 1](https://webpack.github.io/) within [GulpJS 3](http://gulpjs.com/)
 * [WebSocket](https://www.w3.org/TR/websockets/)
 * [Protobuf 3 (Java and JavaScript)](https://developers.google.com/protocol-buffers/)
-
-
-# TODO
-
-* Include example JavaSCript using Custom Elements v1 for frontend once available as polyfill  
-* Logback 2 async logging
-* Upgrade to [Webpack 2](https://webpack.js.org/)
-* ES2016 target for TypeScript compiler (UglifyJS does not support it yet)
-* See other TODO Comments in source
+* [SigmaJS](http://sigmajs.org/)
 
 
 # Development Environment

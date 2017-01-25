@@ -4,7 +4,8 @@
   "description": "UI sub-project within sbt",
   "main": "./ui/dist/bundle.js",
   "dependencies": {
-    "rxjs": "*"
+    "rxjs": "*",
+    "sigma": "*"
   },
   "devDependencies": {
     "chai": "*",

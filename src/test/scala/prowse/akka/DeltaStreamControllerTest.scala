@@ -10,7 +10,7 @@ import akka.stream.testkit.scaladsl.TestSink
 import org.scalatest._
 import org.scalatest.mockito.MockitoSugar
 import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController
-import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController.{Delta, NodeInfo}
+import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController.{Delta, Healthy, NodeInfo, Unhealthy}
 
 class DeltaStreamControllerTest extends FlatSpec with MockitoSugar {
 
@@ -18,11 +18,11 @@ class DeltaStreamControllerTest extends FlatSpec with MockitoSugar {
     private implicit val materializer = ActorMaterializer()
     private implicit val log = mock[LoggingAdapter]
 
-    private val nodeInfoA1 = NodeInfo("A", isHealthy = true, Seq(), Instant.ofEpochMilli(1L))
-    private val nodeInfoA2 = NodeInfo("A", isHealthy = false, Seq(), Instant.ofEpochMilli(2L))
-    private val nodeInfoB1 = NodeInfo("B", isHealthy = true, Seq(), Instant.ofEpochMilli(2L))
-    private val nodeInfoB2 = NodeInfo("B", isHealthy = false, Seq(), Instant.ofEpochMilli(3L))
-    private val nodeInfoC1 = NodeInfo("C", isHealthy = true, Seq(), Instant.ofEpochMilli(4L))
+    private val nodeInfoA1 = NodeInfo("A", healthStatus = Healthy, Seq(), Instant.ofEpochMilli(1L))
+    private val nodeInfoA2 = NodeInfo("A", healthStatus = Unhealthy, Seq(), Instant.ofEpochMilli(2L))
+    private val nodeInfoB1 = NodeInfo("B", healthStatus = Healthy, Seq(), Instant.ofEpochMilli(2L))
+    private val nodeInfoB2 = NodeInfo("B", healthStatus = Unhealthy, Seq(), Instant.ofEpochMilli(3L))
+    private val nodeInfoC1 = NodeInfo("C", healthStatus = Healthy, Seq(), Instant.ofEpochMilli(4L))
 
     private def withDeltaStream(testCode: (DeltaStreamController) => Any) =
         testCode(new DeltaStreamController)

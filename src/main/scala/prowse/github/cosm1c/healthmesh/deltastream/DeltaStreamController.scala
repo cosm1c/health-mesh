@@ -13,8 +13,16 @@ import scala.concurrent.Future
 
 object DeltaStreamController {
 
-    // TODO: healthStatus = UNKNOWN, HEALTHY, UNHEALTHY.. etc...?
-    case class NodeInfo(id: String, isHealthy: Boolean, depends: Seq[String], lastUpdate: Instant)
+    sealed abstract class HealthStatus(val value: String)
+
+    case object UnknownHealth extends HealthStatus("unknown")
+
+    case object Healthy extends HealthStatus("healthy")
+
+    case object Unhealthy extends HealthStatus("unhealthy")
+
+
+    case class NodeInfo(id: String, healthStatus: HealthStatus, depends: Seq[String], lastUpdate: Instant)
 
     case class Delta(add: immutable.Map[String, NodeInfo] = Map.empty[String, NodeInfo],
                      del: immutable.Map[String, NodeInfo] = Map.empty[String, NodeInfo]) {

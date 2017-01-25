@@ -3,7 +3,7 @@ package prowse.github.cosm1c.healthmesh.poller
 import java.time.{Clock, Instant}
 
 import akka.actor.{Actor, ActorLogging, Props}
-import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController.NodeInfo
+import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController.{HealthStatus, Healthy, NodeInfo, Unhealthy}
 import prowse.github.cosm1c.healthmesh.poller.HealthPollerMediatorActor.PollResult
 
 import scala.concurrent.duration._
@@ -30,15 +30,18 @@ class ComponentPollerActor(nodeInfo: NodeInfo)(implicit val clock: Clock) extend
 
     self ! PollNow
 
-    private var lastHealthStatus = false
+    private var lastHealthStatus: HealthStatus = Healthy
 
     override def receive: Receive = {
 
         case PollNow =>
             // TODO: Relace this with actual polling check
             log.info("Random health for {}", nodeInfo.id)
-            lastHealthStatus = !lastHealthStatus
-            val delay: FiniteDuration = Random.nextInt(10).seconds
+            lastHealthStatus = lastHealthStatus match {
+                case Healthy => Unhealthy
+                case _ => Healthy
+            }
+            val delay: FiniteDuration = (5 + Random.nextInt(10)).seconds
             context.system.scheduler.scheduleOnce(delay, self, PollNow)
             context.parent ! PollResult(NodeInfo(nodeInfo.id, lastHealthStatus, nodeInfo.depends, Instant.now(clock)))
     }

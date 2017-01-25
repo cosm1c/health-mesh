@@ -51,6 +51,11 @@ module.exports = {
         test: /\.ts$/,
         loader: "ts-loader",
         exclude: /node_modules/
+      },
+      {
+        test: /sigma.*\.js?$/,
+        exclude: ['.'],
+        loaders: ['script']
       }
     ]
   },

@@ -751,21 +751,6 @@ custom-event@~1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/custom-event/-/custom-event-1.0.1.tgz#5d02a46850adf1b4a317946a3928fccb5bfd0425"
 
-cytoscape-dagre@*:
-  version "1.3.0"
-  resolved "https://registry.yarnpkg.com/cytoscape-dagre/-/cytoscape-dagre-1.3.0.tgz#d66d362ae1ea733f60c2f0ffae5ffb06f1f612c7"
-
-cytoscape@*:
-  version "2.7.14"
-  resolved "https://registry.yarnpkg.com/cytoscape/-/cytoscape-2.7.14.tgz#a7795db9d507465bee0c7f42b0a05724847aa9bf"
-
-dagre@*:
-  version "0.7.4"
-  resolved "https://registry.yarnpkg.com/dagre/-/dagre-0.7.4.tgz#de72f0e74a550ce11ce638f0a136fed712398022"
-  dependencies:
-    graphlib "^1.0.5"
-    lodash "^3.10.0"
-
 dashdash@^1.12.0:
   version "1.14.1"
   resolved "https://registry.yarnpkg.com/dashdash/-/dashdash-1.14.1.tgz#853cfa0f7cbe2fed5de20326b8dd581035f6e2f0"
@@ -1478,12 +1463,6 @@ graceful-fs@~1.2.0:
 "graceful-readlink@>= 1.0.0":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/graceful-readlink/-/graceful-readlink-1.0.1.tgz#4cafad76bc62f02fa039b2f94e9a3dd3a391a725"
-
-graphlib@^1.0.5:
-  version "1.0.7"
-  resolved "https://registry.yarnpkg.com/graphlib/-/graphlib-1.0.7.tgz#0cab2df0ffe6abe070b2625bfa1edb6ec967b8b1"
-  dependencies:
-    lodash "^3.10.0"
 
 growl@1.9.2:
   version "1.9.2"
@@ -2287,7 +2266,7 @@ lodash.words@^3.0.0:
   dependencies:
     lodash._root "^3.0.0"
 
-lodash@^3.10.0, lodash@^3.8.0:
+lodash@^3.8.0:
   version "3.10.1"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-3.10.1.tgz#5bf45e8e49ba4189e17d482789dfd15bd140b7b6"
 
@@ -3473,6 +3452,10 @@ shelljs@^0.7.0:
     glob "^7.0.0"
     interpret "^1.0.0"
     rechoir "^0.6.2"
+
+sigma@^1.2.0:
+  version "1.2.0"
+  resolved "https://registry.yarnpkg.com/sigma/-/sigma-1.2.0.tgz#69140de43fc858f58a70c9821ce4423d30d04871"
 
 sigmund@~1.0.0:
   version "1.0.1"

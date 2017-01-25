@@ -1,6 +1,6 @@
 export interface NodeInfo {
   id: string;
-  isHealthy: Boolean;
+  healthStatus: 'unknown' | 'healthy' | 'unhealthy';
   depends: Array<String>;
   lastUpdate: Date;
 }
