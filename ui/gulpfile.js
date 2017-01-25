@@ -44,15 +44,17 @@ gulp.task('protoc', ['clean'], function (cb) {
   });
 });
 
-gulp.task('test', function () {
-  const mocha = require('gulp-mocha');
+gulp.task('test', function (done) {
+  const Server = require('karma').Server;
 
-  return gulp.src(['js/**/*Test.js'], {read: false})
-    .pipe(mocha({}));
+  new Server({
+    configFile: __dirname + '/karma.conf.js',
+    singleRun: true
+  }, done).start();
 });
 
-gulp.task('package', ['clean', 'protoc'], function (cb) {
-  const webpackConfig = require('./webpack.production.config.js');
+gulp.task('package', ['clean', 'protoc', 'test'], function (cb) {
+  const webpackConfig = require('./webpack.prd.config.js');
 
   webpack(webpackConfig, function (err, stats) {
     if (err) throw err;
@@ -65,7 +67,7 @@ gulp.task('package', ['clean', 'protoc'], function (cb) {
 
 gulp.task("webpack-dev-server", ['clean', 'protoc'], function (cb) {
   const WebpackDevServer = require("webpack-dev-server"),
-    prodWebpackConfig = Object.create(require("./webpack.config.js"));
+    prodWebpackConfig = Object.create(require("./webpack.dev.config.js"));
 
   new WebpackDevServer(webpack(prodWebpackConfig), {
     contentBase: "http://localhost:8080",

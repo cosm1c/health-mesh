@@ -1,11 +1,11 @@
-import {WebSocketSubject, WebSocketSubjectConfig} from "rxjs/observable/dom/WebSocketSubject";
-import {ExampleMessageCodec, ExampleModel} from "./Example";
+import {WebSocketSubject, WebSocketSubjectConfig} from 'rxjs/observable/dom/WebSocketSubject';
+import {ExampleMessageCodec, ExampleModel} from './Example';
 
 const webSocketSubjectConfig: WebSocketSubjectConfig = {
   url: 'ws://localhost:8080/ws',
   resultSelector: ExampleMessageCodec.resultSelector,
   openObserver: {
-    next: (value: Event)=> {
+    next: (value: Event) => {
       console.log('WebSocket Opened', value);
       socket.socket.binaryType = 'arraybuffer';
       socket.socket.send(ExampleMessageCodec.writeText({message: 'Text from Browser'}));
@@ -13,12 +13,12 @@ const webSocketSubjectConfig: WebSocketSubjectConfig = {
     }
   },
   closeObserver: {
-    next: (closeEvent: CloseEvent)=> {
+    next: (closeEvent: CloseEvent) => {
       console.log('WebSocket Close', closeEvent);
     }
   },
   closingObserver: {
-    next: (voidValue: void)=> {
+    next: (voidValue: void) => {
       console.log('WebSocket Closing', voidValue);
     }
   }

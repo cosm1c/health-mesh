@@ -16,13 +16,15 @@
     "outDir": "ui/dist",
     "lib": [
       "DOM",
-      "ES6"
+      "ES6",
+      "ES2015.Collection",
+      "ES2015.Promise"
     ]
   },
   "files": [
-    "../typings/require.d.ts"
+    "./typings/require.d.ts"
   ],
   "exclude": [
-    "../../node_modules"
+    "../node_modules"
   ]
 }

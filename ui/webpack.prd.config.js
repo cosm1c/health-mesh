@@ -1,6 +1,6 @@
 'use strict';
 
-var path = require('path'),
+const path = require('path'),
   webpack = require('webpack'),
   HtmlWebpackPlugin = require('html-webpack-plugin'),
   LessPluginCleanCSS = require('less-plugin-clean-css'),
@@ -8,7 +8,10 @@ var path = require('path'),
   StatsPlugin = require('stats-webpack-plugin'),
   failPlugin = require('webpack-fail-plugin');
 
+const ENV = process.env.NODE_ENV = process.env.ENV = 'production';
+
 module.exports = {
+
   entry: './app/main.ts',
 
   output: {
@@ -21,6 +24,7 @@ module.exports = {
   plugins: [
     failPlugin,
     new webpack.NoErrorsPlugin(),
+    new webpack.optimize.DedupePlugin(),
     new webpack.optimize.OccurenceOrderPlugin(),
     new HtmlWebpackPlugin({
       template: 'index.html',
@@ -57,7 +61,7 @@ module.exports = {
       modules: false
     }),
     new webpack.DefinePlugin({
-      'ENV': JSON.stringify('production')
+      'ENV': JSON.stringify(ENV)
     })
   ],
 
@@ -67,13 +71,26 @@ module.exports = {
 
   module: {
     loaders: [
-      {test: /\.ts$/, loader: "ts-loader"}
+      {
+        test: /\.less$/,
+        loader: ExtractTextPlugin.extract(
+          "css!less?strictMath&noIeCompat&compress"
+        )
+      },
+      {
+        test: /\.ts$/,
+        loader: "ts-loader",
+        exclude: /node_modules/
+      }
     ]
   },
 
   lessLoader: {
     lessPlugins: [
-      new LessPluginCleanCSS({advanced: true})
+      new LessPluginCleanCSS({
+        advanced: true,
+        sourceMapInlineSources: true
+      })
     ]
   }
 };
