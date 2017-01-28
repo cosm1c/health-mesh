@@ -2,14 +2,14 @@ import sbt.Keys._
 import sbtprotobuf.{ProtobufPlugin => PB}
 
 val akkaVersion = "2.4.16"
-val akkaHttpVersion = "10.0.1"
+val akkaHttpVersion = "10.0.2"
 
 lazy val root = (project in file("."))
   .enablePlugins(BuildInfoPlugin)
   .settings(PB.protobufSettings: _*)
   .settings(
 
-    name := "akka-http-webpack-seed",
+    name := "health-mesh",
 
     version := "1.0",
 
@@ -26,7 +26,10 @@ lazy val root = (project in file("."))
       "org.slf4j" % "jul-to-slf4j" % "1.7.22",
 
       "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
-      "org.scalatest" %% "scalatest" % "3.0.1" % Test),
+      "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
+      "org.scalatest" %% "scalatest" % "3.0.1" % Test,
+      "org.mockito" % "mockito-all" % "1.10.19" % Test
+    ),
 
     scalacOptions ++= Seq(
       "-target:jvm-1.8",

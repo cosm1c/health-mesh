@@ -4,7 +4,6 @@
   "description": "UI sub-project within sbt",
   "main": "./ui/dist/bundle.js",
   "dependencies": {
-    "google-protobuf": "*",
     "rxjs": "*"
   },
   "devDependencies": {

@@ -21,29 +21,6 @@ gulp.task('clean', function (cb) {
   });
 });
 
-// TODO: Watch proto src for dev-server
-gulp.task('protoc', ['clean'], function (cb) {
-  const exec = require('child_process').exec,
-    fs = require('fs');
-
-  fs.mkdir('generated', function () {
-    exec('protoc --js_out=import_style=commonjs,binary:generated --proto_path=../src/main/protobuf ../src/main/protobuf/*.proto',
-      function (error, stdout, stderr) {
-        if (error) {
-          console.error('protoc error: ', error);
-          return;
-        }
-        if (stdout) {
-          console.log('[protoc]  ', stdout);
-        }
-        if (stderr) {
-          console.error('[protoc]! ', stderr);
-        }
-        cb();
-      })
-  });
-});
-
 gulp.task('test', function (done) {
   const Server = require('karma').Server;
 
@@ -53,7 +30,7 @@ gulp.task('test', function (done) {
   }, done).start();
 });
 
-gulp.task('package', ['clean', 'protoc', 'test'], function (cb) {
+gulp.task('package', ['clean', 'test'], function (cb) {
   const webpackConfig = require('./webpack.prd.config.js');
 
   webpack(webpackConfig, function (err, stats) {
@@ -65,7 +42,7 @@ gulp.task('package', ['clean', 'protoc', 'test'], function (cb) {
   });
 });
 
-gulp.task("webpack-dev-server", ['clean', 'protoc'], function (cb) {
+gulp.task("webpack-dev-server", ['clean'], function (cb) {
   const WebpackDevServer = require("webpack-dev-server"),
     prodWebpackConfig = Object.create(require("./webpack.dev.config.js"));
 

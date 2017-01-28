@@ -1,4 +1,4 @@
-package prowse.akka
+package prowse.github.cosm1c.healthmesh
 
 import java.lang.Thread.UncaughtExceptionHandler
 import java.util.logging.{Level, LogManager}
