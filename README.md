@@ -1,5 +1,7 @@
-Akka HTTP Webpack Seed
-======================
+Health-Mesh
+===========
+
+A simple example of displaying a network of nodes in a digraph with health.
 
 *NOTE*: If IntelliJ has compile errors such as
 
