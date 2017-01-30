@@ -13,6 +13,7 @@ export class SigmaDigraph {
   private s: Sigma;
   private nodeCount: number = 0;
   private dragListener: SigmaJs.DragNodes;
+  private topologyChanged = false;
 
   constructor(digraphEl: HTMLElement) {
     this.s = new sigma({
@@ -27,7 +28,7 @@ export class SigmaDigraph {
           id: SigmaDigraph.rootNodeID,
           x: 0,
           y: 0,
-          size: 5
+          size: 3
         }]
       }
     });
@@ -43,13 +44,11 @@ export class SigmaDigraph {
         this.s.killForceAtlas2();
       }
     });
-    /*
-     this.dragListener.bind('dragend', () => {
-     if (!this.s.isForceAtlas2Running()) {
-     this.s.startForceAtlas2({worker: true, barnesHutOptimize: true});
-     }
-     });
-     */
+    this.dragListener.bind('dragend', () => {
+      if (!this.s.isForceAtlas2Running()) {
+        this.s.startForceAtlas2({worker: true, barnesHutOptimize: true});
+      }
+    });
   }
 
   static colorForNode(nodeInfo: NodeInfo): string {
@@ -59,71 +58,63 @@ export class SigmaDigraph {
       case 'healthy':
         return '#00FF00';
       default:
-        return '#ffff00';
+        return '#ffa500';
     }
   }
 
   update(add: NodeInfo[], del: NodeInfo[]) {
     console.debug(`${new Date()}\n add:`, add, ' del:', del);
-    console.debug(`isForceAtlas2Running = ${this.s.isForceAtlas2Running()}`);
+    // console.debug(`isForceAtlas2Running = ${this.s.isForceAtlas2Running()}`);
 
-    let nodesAddedOrRemoved = false;
-
-    add.forEach((node: NodeInfo) => {
-      const id = `n-${node.id}`,
-        existingNode = this.s.graph.nodes(id);
-
-      if (existingNode) {
-        existingNode.color = SigmaDigraph.colorForNode(node);
-
-      } else {
-        nodesAddedOrRemoved = true;
-        this.nodeCount++;
-        this.s.graph.addNode({
-          id: id,
-          label: node.id,
-          color: SigmaDigraph.colorForNode(node),
-          x: this.nodeCount % SigmaDigraph.nodeRows,
-          y: this.nodeCount,
-          size: 3
-        });
-        // Link back to root node (lr somewhere else in a hierarchy) - prevents orphans
-        this.s.graph.addEdge({
-          id: `e-${node.id}-${SigmaDigraph.rootNodeID}`,
-          color: SigmaDigraph.colorForNode(node),
-          source: id,
-          target: SigmaDigraph.rootNodeID
-        });
-      }
-    });
-
-    add.forEach((node: NodeInfo) => {
-      node.depends.forEach((targetId: string) => {
-        const id = `e-${node.id}-${targetId}`,
-          existingNode = this.s.graph.edges(id);
-
-        if (existingNode) {
-          existingNode.color = SigmaDigraph.colorForNode(node);
-
-        } else {
-          this.s.graph.addEdge({
-            id: id,
-            color: SigmaDigraph.colorForNode(node),
-            source: `n-${node.id}`,
-            target: `n-${targetId}`
-          });
-        }
+    add.forEach((nodeInfo: NodeInfo) => {
+      this.nodeAddOrUpdate(nodeInfo.id, 1, SigmaDigraph.colorForNode(nodeInfo));
+      this.addEdgeIfNotExist(nodeInfo.id, SigmaDigraph.rootNodeID);
+      nodeInfo.depends.forEach((dependId: string) => {
+        this.nodeAddOrUpdate(dependId, 1, '#d3d3d3');
+        this.addEdgeIfNotExist(nodeInfo.id, dependId);
       });
     });
 
-    if (nodesAddedOrRemoved) {
+    if (this.topologyChanged) {
       if (this.s.isForceAtlas2Running()) {
         this.s.killForceAtlas2();
       }
       this.s.startForceAtlas2({worker: true, barnesHutOptimize: true});
+      this.topologyChanged = false;
     }
 
     this.s.refresh();
   }
 
+  private nodeAddOrUpdate(id: string, size: number, color: string) {
+    const node = this.s.graph.nodes(id);
+    if (!node) {
+      this.nodeCount++;
+      this.topologyChanged = true;
+      this.s.graph.addNode({
+        id: id,
+        label: id,
+        x: this.nodeCount % SigmaDigraph.nodeRows,
+        y: Math.floor(this.nodeCount / SigmaDigraph.nodeRows),
+        size: size,
+        color: color
+      });
+
+    } else if (node.color !== color) {
+      node.color = color;
+    }
+  }
+
+  private addEdgeIfNotExist(source: string, target: string) {
+    const id = `e-${source}-${target}`;
+    if (!this.s.graph.edges(id)) {
+      this.topologyChanged = true;
+      this.s.graph.addEdge({
+        id: id,
+        source: source,
+        target: target,
+        size: 1
+      });
+    }
+  }
 }

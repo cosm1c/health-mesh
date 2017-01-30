@@ -1,12 +1,7 @@
 Health-Mesh
 ===========
 
-A simple example of displaying a network of nodes in a digraph with health.
-
-*NOTE*: If IntelliJ has compile errors such as
-
-    [...] is already defined as object [...]
-then set Intellij's Scala Compiler "Incrementality type" to SBT (caused by generated Java code).
+An example of displaying a network of nodes in a digraph with health.
 
 Tech Stack:
 * [Akka HTTP](http://doc.akka.io/docs/akka-http/current/scala.html) (Scala 2.12)
@@ -18,7 +13,7 @@ Tech Stack:
 * [SigmaJS](http://sigmajs.org/)
 
 
-# Development Environment
+# SBT Development Environment
 
 Terminal 1 - start Akka HTTP Server:
 
@@ -29,6 +24,22 @@ Terminal 2 - start WebPack Dev Server:
     cd ui && gulp webpack-dev-server
 
 
-# Release Command
+# SBT Release Command
 
     sbt clean assembly
+
+
+# Maven Development Environment
+
+Terminal 1 - start Akka HTTP Server:
+
+    mvn exec:java
+
+Terminal 2 - start WebPack Dev Server:
+
+    cd ui && gulp webpack-dev-server
+
+
+# Maven Release Command
+
+    mvn

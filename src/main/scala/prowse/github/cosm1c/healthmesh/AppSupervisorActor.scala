@@ -10,7 +10,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.PathMatchers.RemainingPath
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
-import prowse.BuildInfoHelper
 import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController.{NodeInfo, UnknownHealth}
 import prowse.github.cosm1c.healthmesh.deltastream.{DeltaStreamController, MeshUpdateWebsocketFlow}
 import prowse.github.cosm1c.healthmesh.poller.HealthPollerMediatorActor
@@ -23,7 +22,7 @@ class AppSupervisorActor extends Actor with ActorLogging {
     private implicit val actorSystem = context.system
     private implicit val executionContextExecutor = context.dispatcher
     private implicit val materializer = ActorMaterializer()
-    private implicit val clocl = Clock.systemUTC()
+    private implicit val clock = Clock.systemUTC()
     private implicit val _log = log
 
     private val deltaStreamController = new DeltaStreamController
@@ -48,12 +47,14 @@ class AppSupervisorActor extends Actor with ActorLogging {
                     getFromResource("ui/index.html")
                 }
             } ~
+            /*
             path("buildInfo") {
                 get {
                     // Set ContentType as we have pre-calculated JSON response as String
                     complete(HttpEntity(ContentTypes.`application/json`, BuildInfoHelper.buildInfoJson))
                 }
             } ~
+            */
             path(RemainingPath) { filePath =>
                 getFromResource("ui/" + filePath)
             }

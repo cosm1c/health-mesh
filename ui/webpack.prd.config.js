@@ -15,10 +15,10 @@ module.exports = {
   entry: './app/main.ts',
 
   output: {
-    path: path.join(__dirname, "dist", "ui"),
+    path: path.join(__dirname, "..", "target", "classes", "ui"),
     filename: '[name]-[hash].min.js',
     chunkFilename: "[id]-[hash].chunk.min.js",
-    publicPath: '/'
+    publicPath: './'
   },
 
   plugins: [
@@ -81,6 +81,11 @@ module.exports = {
         test: /\.ts$/,
         loader: "ts-loader",
         exclude: /node_modules/
+      },
+      {
+        test: /sigma.*\.js?$/,
+        exclude: ['.'],
+        loaders: ['script']
       }
     ]
   },
