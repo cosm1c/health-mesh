@@ -4,7 +4,7 @@ const assert = Chai.assert;
 
 describe('RingBuffer', () => {
 
-  describe('Dummy Test', () => {
+  it('Dummy Test', () => {
     let exampleModel = JSON.parse('{"message":"helloWorld"}');
 
     assert.deepEqual(exampleModel, {message: 'helloWorld'});
