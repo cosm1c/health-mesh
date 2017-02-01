@@ -1,12 +1,10 @@
 import sbt.Keys._
-import sbtprotobuf.{ProtobufPlugin => PB}
 
 val akkaVersion = "2.4.16"
 val akkaHttpVersion = "10.0.2"
 
 lazy val root = (project in file("."))
   .enablePlugins(BuildInfoPlugin)
-  .settings(PB.protobufSettings: _*)
   .settings(
 
     name := "health-mesh",
@@ -50,14 +48,8 @@ lazy val root = (project in file("."))
       //"-Ywarn-unused-import"     // 2.11 only, seems to cause issues with generated sources?
     ),
 
-    // Ensures that static assets in the ui/dist directory are packaged
-    unmanagedResourceDirectories in Compile += ((baseDirectory in Compile) (_ / "ui" / "dist")).value,
-
-    // Include Protobuf files in deploymentprotobufGenerate
-    unmanagedResourceDirectories in Compile += (sourceDirectory in PB.protobufConfig).value,
-
-    // Protobuf custom options
-    //protocOptions in PB.protobufConfig := Seq("--js_out=import_style=commonjs,binary:ui/dist"),
+    // Ensures that static assets are packaged
+    unmanagedResourceDirectories in Compile += ((baseDirectory in Compile) (_ / "target" / "classes")).value,
 
     // Build Info
     buildInfoOptions += BuildInfoOption.ToJson,
