@@ -41,14 +41,33 @@ export class SigmaDigraph {
     this.dragListener = sigma.plugins.dragNodes(this.s, this.s.renderers[0]);
     this.dragListener.bind('startdrag', () => {
       if (this.s.isForceAtlas2Running()) {
-        this.s.killForceAtlas2();
+        this.s.stopForceAtlas2();
       }
     });
     this.dragListener.bind('dragend', () => {
-      if (!this.s.isForceAtlas2Running()) {
-        this.s.startForceAtlas2({worker: true, barnesHutOptimize: true});
-      }
+      this.performLayoutForLimitedDuration();
     });
+  }
+
+  private currentTimeout: number | null = null;
+
+  private performLayoutForLimitedDuration() {
+    if (this.currentTimeout) {
+      console.debug('Clearing existing timeout for performing layout');
+      clearTimeout(this.currentTimeout);
+      this.currentTimeout = null;
+    }
+
+    if (!this.s.isForceAtlas2Running()) {
+      console.debug('Starting layout');
+      this.s.startForceAtlas2({worker: true, barnesHutOptimize: true});
+    }
+
+    this.currentTimeout = setTimeout(() => {
+      console.debug('Killing layout');
+      this.s.killForceAtlas2();
+      this.currentTimeout = null;
+    }, 20000);
   }
 
   static colorForNode(nodeInfo: NodeInfo): string {
@@ -76,11 +95,14 @@ export class SigmaDigraph {
     });
 
     if (this.topologyChanged) {
+      this.topologyChanged = false;
+
       if (this.s.isForceAtlas2Running()) {
+        console.debug('Restarting layout due to topology change');
         this.s.killForceAtlas2();
       }
-      this.s.startForceAtlas2({worker: true, barnesHutOptimize: true});
-      this.topologyChanged = false;
+
+      this.performLayoutForLimitedDuration();
     }
 
     this.s.refresh();
