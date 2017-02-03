@@ -7,6 +7,8 @@ import akka.stream.Materializer
 import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController
 import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController.NodeInfo
 
+import scala.collection.immutable
+
 object HealthPollerMediatorActor {
 
     def props(deltaStream: DeltaStreamController)(implicit materializer: Materializer, clock: Clock): Props =
@@ -18,6 +20,11 @@ object HealthPollerMediatorActor {
 
     case class PollResult(nodeInfo: NodeInfo)
 
+    case class FetchPollHistory(id: String)
+
+    case class PollHistory(history: immutable.Seq[PollResult])
+
+    val emptyPollHistory = PollHistory(immutable.Seq.empty[PollResult])
 }
 
 class HealthPollerMediatorActor(deltaStream: DeltaStreamController)(implicit val materializer: Materializer, clock: Clock) extends Actor with ActorLogging {
@@ -46,6 +53,15 @@ class HealthPollerMediatorActor(deltaStream: DeltaStreamController)(implicit val
             healthPollers.get(id).foreach { actorRef =>
                 actorRef ! PoisonPill
                 healthPollers -= id
+            }
+
+        case msg@FetchPollHistory(id) =>
+            healthPollers.get(id) match {
+                case Some(actor) =>
+                    actor forward msg
+
+                case None =>
+                    sender() ! emptyPollHistory
             }
 
         case msg => log.warning("Received unexpected message: {}", msg)

@@ -4,7 +4,8 @@ import java.time.{Clock, Instant}
 
 import akka.actor.{Actor, ActorLogging, Props}
 import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController.{HealthStatus, Healthy, NodeInfo, Unhealthy}
-import prowse.github.cosm1c.healthmesh.poller.HealthPollerMediatorActor.PollResult
+import prowse.github.cosm1c.healthmesh.poller.HealthPollerMediatorActor.{FetchPollHistory, PollHistory, PollResult}
+import prowse.github.cosm1c.healthmesh.util.RingBuffer
 
 import scala.concurrent.duration._
 import scala.language.postfixOps
@@ -24,11 +25,13 @@ class ComponentPollerActor(nodeInfo: NodeInfo)(implicit val clock: Clock) extend
 
     import ComponentPollerActor._
 
-    log.info("Started poller for {}", nodeInfo.id)
+    log.debug("Started poller for {}", nodeInfo.id)
 
     private implicit val executor = context.dispatcher
 
     self ! PollNow
+
+    private var pollHistory = new RingBuffer[PollResult](5)
 
     private var lastHealthStatus: HealthStatus = Healthy
 
@@ -36,13 +39,25 @@ class ComponentPollerActor(nodeInfo: NodeInfo)(implicit val clock: Clock) extend
 
         case PollNow =>
             // TODO: Relace this with actual polling check
-            log.info("Random health for {}", nodeInfo.id)
+            log.debug("Random health for {}", nodeInfo.id)
             lastHealthStatus = lastHealthStatus match {
                 case Healthy => Unhealthy
                 case _ => Healthy
             }
+
             val delay: FiniteDuration = (5 + Random.nextInt(10)).seconds
             context.system.scheduler.scheduleOnce(delay, self, PollNow)
-            context.parent ! PollResult(NodeInfo(nodeInfo.id, lastHealthStatus, nodeInfo.depends, Instant.now(clock)))
+
+            recordHealthStatus(lastHealthStatus)
+
+        case FetchPollHistory(_) =>
+            log.debug("[{}] FetchPollHistory", nodeInfo.id)
+            sender() ! PollHistory(pollHistory.get())
+    }
+
+    private def recordHealthStatus(healthStatus: HealthStatus) = {
+        val pollResult = PollResult(NodeInfo(nodeInfo.id, healthStatus, nodeInfo.depends, Instant.now(clock)))
+        context.parent ! pollResult
+        pollHistory.put(pollResult)
     }
 }

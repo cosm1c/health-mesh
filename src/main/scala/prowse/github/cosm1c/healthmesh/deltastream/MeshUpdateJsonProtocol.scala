@@ -1,6 +1,7 @@
 package prowse.github.cosm1c.healthmesh.deltastream
 
 import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController._
+import prowse.github.cosm1c.healthmesh.poller.HealthPollerMediatorActor.{PollHistory, PollResult}
 import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, pimpString}
 
 object MeshUpdateJsonProtocol {
@@ -21,6 +22,9 @@ object MeshUpdateJsonProtocol {
 
     private implicit val nodeInfoJsonFormat = DefaultJsonProtocol.jsonFormat4(NodeInfo)
     private implicit val deltaNodeInfoJsonFormat = DefaultJsonProtocol.jsonFormat2(Delta)
+
+    private implicit val pollResultJsonFormat = DefaultJsonProtocol.jsonFormat1(PollResult)
+    implicit val pollHistoryJsonFormat = DefaultJsonProtocol.jsonFormat1(PollHistory)
 
     def marshallAsJson(model: Delta): String = deltaNodeInfoJsonFormat.write(model).compactPrint
 
