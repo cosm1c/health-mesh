@@ -14,7 +14,7 @@ import io.swagger.annotations._
 import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController.NodeList
 import prowse.github.cosm1c.healthmesh.deltastream.MeshUpdateJsonProtocol._
 import prowse.github.cosm1c.healthmesh.poller.ComponentPollerActor.PollHistory
-import prowse.github.cosm1c.healthmesh.poller.HealthPollerMediatorActor.{FetchPollHistory, ListNodes, PollNodeNow}
+import prowse.github.cosm1c.healthmesh.poller.HealthPollerMediatorActor.{FetchPollHistory, ListNodes, UpdatePollInterval}
 import prowse.github.cosm1c.healthmesh.util.Status.{Failure, Status, Success}
 
 import scala.concurrent.duration._
@@ -29,7 +29,7 @@ class PollerService(healthPollerMediatorActor: ActorRef, minAllowedPollInterim: 
         pathPrefix("poller") {
             listNodes ~
                 fetchPollHistory ~
-                pollNodeNow
+                updatePollInterval
         }
 
     @ApiOperation(value = "Fetch set of all nodes being polled", httpMethod = "GET", responseContainer = "Set", response = classOf[String])
@@ -42,7 +42,7 @@ class PollerService(healthPollerMediatorActor: ActorRef, minAllowedPollInterim: 
             }
         }
 
-    @ApiOperation(value = "Fetch polling history of nodeId", httpMethod = "GET")
+    @ApiOperation(value = "Fetch polling history for a node", httpMethod = "GET")
     @ApiImplicitParams(Array(
         new ApiImplicitParam(name = "nodeId", value = "Id of the node", required = true, dataType = "string", paramType = "path")
     ))
@@ -66,24 +66,25 @@ class PollerService(healthPollerMediatorActor: ActorRef, minAllowedPollInterim: 
         }
     }
 
-    @ApiOperation(value = "Initiate immediate health poll and optionally set a temporary polling interim override", httpMethod = "POST", response = classOf[PollHistory])
+    @ApiOperation(value = "Modify polling interval for a node", httpMethod = "POST", response = classOf[PollHistory])
     @ApiImplicitParams(Array(
         new ApiImplicitParam(name = "nodeId", value = "Id of the node", required = true, dataType = "string", paramType = "path"),
-        new ApiImplicitParam(name = "pollInterimMs", value = "Milliseconds from end of poll to next poll - active for limited time", required = false, dataType = "int", paramType = "query")
+        new ApiImplicitParam(name = "pollNow", value = "Perform an immediate Poll", defaultValue = "false", required = false, dataType = "boolean", paramType = "query"),
+        new ApiImplicitParam(name = "pollInterimMs", value = "Milliseconds from end of poll to next poll - active for limited time", required = false, dataType = "long", paramType = "query")
     ))
     @ApiResponses(Array(
-        new ApiResponse(code = 200, message = "successful operation"),
+        new ApiResponse(code = 200, message = "successful operation", response = classOf[Long]),
         new ApiResponse(code = 404, message = "Node does not exist")
     ))
     @Path("/{nodeId}")
-    def pollNodeNow: Route = {
+    def updatePollInterval: Route = {
         post {
             path(Remaining) { nodeId =>
-                parameter('pollInterimMs.as[Long].?) { maybePollInterimMs =>
+                parameters('pollInterimMs.as[Long].?, 'pollNow.as[Boolean].?) { (maybePollInterimMs, maybePollNow) =>
                     validate(intervalValidator(maybePollInterimMs), "pollInterimMs below allowed threshold") {
-                        val eventualStatus = (healthPollerMediatorActor ? PollNodeNow(nodeId, maybePollInterimMs)).mapTo[Status[Done]]
+                        val eventualStatus = (healthPollerMediatorActor ? UpdatePollInterval(nodeId, maybePollInterimMs, maybePollNow)).mapTo[Status[Done]]
                         onSuccess(eventualStatus) {
-                            case Success(_) =>
+                            case Success(pollInterval) =>
                                 complete(OK)
 
                             case Failure(throwable) =>

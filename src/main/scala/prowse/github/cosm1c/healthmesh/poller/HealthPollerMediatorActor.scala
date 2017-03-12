@@ -24,7 +24,7 @@ object HealthPollerMediatorActor {
 
     object ListNodes
 
-    case class PollNodeNow(nodeId: String, maybePollInterimMs: Option[Long])
+    case class UpdatePollInterval(nodeId: String, maybePollInterimMs: Option[Long], maybePollNow: Option[Boolean])
 
     case class PutPoller(nodeInfo: NodeInfo /* TODO: pollingInstructions */)
 
@@ -78,11 +78,11 @@ class HealthPollerMediatorActor(deltaStream: DeltaStreamController, defaultPollI
                     sender() ! Failure[PollHistory](new RuntimeException(s"Unknown node $nodeId"))
             }
 
-        case PollNodeNow(nodeId, maybePollInterimMs) =>
+        case UpdatePollInterval(nodeId, maybePollInterimMs, maybePollNow) =>
             healthPollers.get(nodeId) match {
                 case Some(poller) =>
                     maybePollInterimMs.foreach(pollInterimMs => poller ! SetInterimOverride(FiniteDuration(pollInterimMs, TimeUnit.MILLISECONDS)))
-                    poller ! PollNow
+                    maybePollNow.foreach(pollNow => if (pollNow) poller ! PollNow)
                     sender() ! SUCCESS_DONE
 
                 case None =>
