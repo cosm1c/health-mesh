@@ -16,7 +16,7 @@ export class AssertionError implements Error {
   /**
    * Allow errors to be converted to JSON for static transfer.
    *
-   * @param {Boolean} include stack (default: `true`)
+   * @param {Boolean} stack include stack (default: `true`)
    * @return {Object} object that can be `JSON.stringify`
    */
   public toJSON(stack: boolean): Object;

@@ -8,33 +8,26 @@ import Sigma = SigmaJs.Sigma;
 export class SigmaDigraph {
 
   private static readonly nodeRows: number = 5;
-  private static readonly rootNodeID: string = 'root';
+  private static readonly layoutDelayMs: number = 200;
+  private static readonly layoutDurationMs: number = 2000;
 
-  private s: Sigma;
+  private readonly s: Sigma = new sigma({
+    settings: {
+      edgeColor: 'source'
+    }
+  });
+
   private nodeCount: number = 0;
   private dragListener: SigmaJs.DragNodes;
   private topologyChanged = false;
+  private layoutTimeout: number | null = null;
 
   constructor(digraphEl: HTMLElement) {
-    this.s = new sigma({
-      settings: {
-        edgeColor: 'source',
-        // defaultNodeColor: 'node'
-        // minArrowSize
-      },
-      graph: {
-        edges: [],
-        nodes: [{
-          id: SigmaDigraph.rootNodeID,
-          x: 0,
-          y: 0,
-          size: 3
-        }]
-      }
-    });
+    this.s.addCamera('cam1');
 
     this.s.addRenderer({
-      container: digraphEl/*, // webgl incompatible with dragNodes
+      container: digraphEl,
+      camera: 'cam1' /*, // webgl incompatible with dragNodes
        type: 'webgl'*/
     });
 
@@ -45,29 +38,37 @@ export class SigmaDigraph {
       }
     });
     this.dragListener.bind('dragend', () => {
-      this.performLayoutForLimitedDuration();
+      this.performLayout();
     });
   }
 
-  private currentTimeout: number | null = null;
-
-  private performLayoutForLimitedDuration() {
-    if (this.currentTimeout) {
-      console.debug('Clearing existing timeout for performing layout');
-      clearTimeout(this.currentTimeout);
-      this.currentTimeout = null;
+  private performLayout() {
+    if (this.layoutTimeout) {
+      console.debug('Clearing existing layout timeout');
+      clearTimeout(this.layoutTimeout);
+      this.layoutTimeout = null;
     }
 
-    if (!this.s.isForceAtlas2Running()) {
-      console.debug('Starting layout');
-      this.s.startForceAtlas2({worker: true, barnesHutOptimize: true});
-    }
-
-    this.currentTimeout = setTimeout(() => {
-      console.debug('Killing layout');
+    if (this.s.isForceAtlas2Running()) {
+      console.debug('Killing layout due to new layout request');
       this.s.killForceAtlas2();
-      this.currentTimeout = null;
-    }, 20000);
+    }
+
+    console.debug(`Scheduling layout after ${SigmaDigraph.layoutDelayMs}ms delay`);
+    this.layoutTimeout = setTimeout(() => {
+
+      if (!this.s.isForceAtlas2Running()) {
+        console.debug(`Starting scheduled layout after ${SigmaDigraph.layoutDelayMs}ms delay - will kill after ${SigmaDigraph.layoutDurationMs / 1000}s`);
+        this.s.startForceAtlas2({worker: true, barnesHutOptimize: true});
+      }
+
+      this.layoutTimeout = setTimeout(() => {
+        console.debug(`Killing layout after ${SigmaDigraph.layoutDurationMs}ms duration`);
+        this.s.killForceAtlas2();
+        this.layoutTimeout = null;
+      }, SigmaDigraph.layoutDurationMs);
+
+    }, SigmaDigraph.layoutDelayMs);
   }
 
   static colorForNode(nodeInfo: NodeInfo): string {
@@ -87,9 +88,8 @@ export class SigmaDigraph {
 
     add.forEach((nodeInfo: NodeInfo) => {
       this.nodeAddOrUpdate(nodeInfo.id, 1, SigmaDigraph.colorForNode(nodeInfo));
-      this.addEdgeIfNotExist(nodeInfo.id, SigmaDigraph.rootNodeID);
       nodeInfo.depends.forEach((dependId: string) => {
-        this.nodeAddOrUpdate(dependId, 1, '#d3d3d3');
+        this.nodeAddOrUpdate(dependId, 1, '#a9a9a9');
         this.addEdgeIfNotExist(nodeInfo.id, dependId);
       });
     });
@@ -102,7 +102,7 @@ export class SigmaDigraph {
         this.s.killForceAtlas2();
       }
 
-      this.performLayoutForLimitedDuration();
+      this.performLayout();
     }
 
     this.s.refresh();

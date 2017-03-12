@@ -1,11 +1,13 @@
 import sbt.Keys._
 
-val akkaVersion = "2.4.16"
-val akkaHttpVersion = "10.0.2"
+val akkaVersion = "2.4.17"
+val akkaHttpVersion = "10.0.4"
 
 lazy val root = (project in file("."))
   .enablePlugins(BuildInfoPlugin)
   .settings(
+
+    organization := "prowse.github.cosm1c",
 
     name := "health-mesh",
 
@@ -18,6 +20,8 @@ lazy val root = (project in file("."))
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
+      "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.9.1",
+      "ch.megard" %% "akka-http-cors" % "0.1.11",
 
       "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
       "ch.qos.logback" % "logback-classic" % "1.1.8" % Runtime,
@@ -46,6 +50,11 @@ lazy val root = (project in file("."))
       "-Ywarn-value-discard",
       "-Xfuture" //,
       //"-Ywarn-unused-import"     // 2.11 only, seems to cause issues with generated sources?
+    ),
+
+    javacOptions ++= Seq(
+      "-source", "1.8",
+      "-target", "1.8"
     ),
 
     // Ensures that static assets are packaged

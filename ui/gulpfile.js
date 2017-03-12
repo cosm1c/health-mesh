@@ -30,8 +30,7 @@ gulp.task('test', function (done) {
   }, done).start();
 });
 
-// TODO: re-enable test
-gulp.task('package', ['clean'/*, 'test'*/], function (cb) {
+gulp.task('package', ['clean', 'test'], function (cb) {
   const webpackConfig = require('./webpack.prd.config.js');
 
   webpack(webpackConfig, function (err, stats) {

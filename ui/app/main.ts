@@ -57,7 +57,7 @@ window.onload = () => {
   console.info('onload');
   const socket: WebSocketSubject<Delta> = WebSocketSubject.create(webSocketSubjectConfig);
 
-  let digraph = new SigmaDigraph(digraphEl);
+  const digraph = new SigmaDigraph(digraphEl);
 
   socket.subscribe(
     // next

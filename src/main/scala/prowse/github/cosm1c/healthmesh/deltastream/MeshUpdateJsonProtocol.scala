@@ -1,30 +1,31 @@
 package prowse.github.cosm1c.healthmesh.deltastream
 
 import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController._
-import prowse.github.cosm1c.healthmesh.poller.HealthPollerMediatorActor.{PollHistory, PollResult}
-import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, pimpString}
+import prowse.github.cosm1c.healthmesh.poller.ComponentPollerActor.{PollHistory, PollResult}
+import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonFormat, pimpString}
 
 object MeshUpdateJsonProtocol {
 
     import DefaultJsonProtocol._
     import JsonFormats._
 
-    private implicit val healthStatusJsonFormat = new JsonFormat[HealthStatus] {
+    implicit val healthStatusJsonFormat = new JsonFormat[HealthStatus] {
         override def read(json: JsValue): HealthStatus = json match {
             case JsString(Healthy.value) => Healthy
             case JsString(Unhealthy.value) => Unhealthy
-            case JsString(UnknownHealth.value) => UnknownHealth
+            // case JsString(UnknownHealth.value) => UnknownHealth
             case _ => UnknownHealth
         }
 
         override def write(obj: HealthStatus): JsValue = JsString(obj.value)
     }
 
-    private implicit val nodeInfoJsonFormat = DefaultJsonProtocol.jsonFormat4(NodeInfo)
-    private implicit val deltaNodeInfoJsonFormat = DefaultJsonProtocol.jsonFormat2(Delta)
+    implicit val nodeInfoJsonFormat: RootJsonFormat[NodeInfo] = DefaultJsonProtocol.jsonFormat4(NodeInfo)
+    implicit val nodeListJsonFormat: RootJsonFormat[NodeList] = DefaultJsonProtocol.jsonFormat1(NodeList)
+    implicit val deltaNodeInfoJsonFormat: RootJsonFormat[Delta] = DefaultJsonProtocol.jsonFormat2(Delta)
 
-    private implicit val pollResultJsonFormat = DefaultJsonProtocol.jsonFormat1(PollResult)
-    implicit val pollHistoryJsonFormat = DefaultJsonProtocol.jsonFormat1(PollHistory)
+    implicit val pollResultJsonFormat: RootJsonFormat[PollResult] = DefaultJsonProtocol.jsonFormat1(PollResult)
+    implicit val pollHistoryJsonFormat: RootJsonFormat[PollHistory] = DefaultJsonProtocol.jsonFormat1(PollHistory)
 
     def marshallAsJson(model: Delta): String = deltaNodeInfoJsonFormat.write(model).compactPrint
 

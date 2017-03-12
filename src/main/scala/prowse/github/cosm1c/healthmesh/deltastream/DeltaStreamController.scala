@@ -9,9 +9,13 @@ import akka.stream.{Materializer, OverflowStrategy, QueueOfferResult, SourceShap
 
 import scala.collection.immutable
 import scala.concurrent.Future
-
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object DeltaStreamController {
+
+    val maxTimeToFirstMessage: FiniteDuration = 100 milliseconds
+    val websocketKeepAliveDuration: FiniteDuration = 50 seconds
 
     sealed abstract class HealthStatus(val value: String)
 
@@ -24,12 +28,16 @@ object DeltaStreamController {
 
     case class NodeInfo(id: String, healthStatus: HealthStatus, depends: Seq[String], lastUpdate: Instant)
 
+    case class NodeList(nodeIds: Set[String])
+
     case class Delta(add: immutable.Map[String, NodeInfo] = Map.empty[String, NodeInfo],
                      del: immutable.Map[String, NodeInfo] = Map.empty[String, NodeInfo]) {
         def isEmptyDelta: Boolean = add.isEmpty && del.isEmpty
     }
 
     val emptyDelta = Delta()
+
+    val zeroDeltaGenerator: () => Delta = () => emptyDelta
 
     case class SnapshotAndDelta(snapshot: immutable.Map[String, NodeInfo], lastDelta: Delta)
 
@@ -62,10 +70,11 @@ class DeltaStreamController()(implicit log: LoggingAdapter, materializer: Materi
 
     private val (pushMethod, broadcastSource): ((Delta) => Future[QueueOfferResult], Source[SnapshotAndDelta, NotUsed]) =
         Source.queue[Delta](0, OverflowStrategy.fail)
+            .keepAlive(maxTimeToFirstMessage, zeroDeltaGenerator)
             .scan(zeroSnapshotAndDelta)(streamAccum)
             .buffer(1, OverflowStrategy.dropHead)
             .mapMaterializedValue(sourceQueue => (delta: Delta) => sourceQueue.offer(delta))
-            .toMat(BroadcastHub.sink(bufferSize = 1))(Keep.both)
+            .toMat(BroadcastHub.sink(bufferSize = 2))(Keep.both)
             .run()
 
     // drain messages when no one is connected
@@ -93,17 +102,13 @@ class DeltaStreamController()(implicit log: LoggingAdapter, materializer: Materi
                 val conflationBuffer = b.add(
                     Flow[Delta]
                         .conflate(conflateDeltas)
-                        .filterNot(_.isEmptyDelta))
+                        .filterNot(_.isEmptyDelta)
+                        .keepAlive(websocketKeepAliveDuration, zeroDeltaGenerator))
 
                 statesSource ~> bcast ~> snapshot ~> concat ~> conflationBuffer
                 /*           */ bcast ~> deltas ~> concat
 
                 SourceShape.of(conflationBuffer.out)
-
-        }).mapMaterializedValue { mat =>
-            // After each subscriber send through an empty update so they get their first snapshot
-            add(Seq.empty)
-            mat
-        }
+        })
 
 }
