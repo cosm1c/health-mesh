@@ -1,6 +1,6 @@
 package prowse.github.cosm1c.healthmesh.poller
 
-import java.time.Clock
+import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit
 
 import akka.Done
@@ -9,12 +9,12 @@ import akka.pattern.ask
 import akka.stream.Materializer
 import akka.util.Timeout
 import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController
-import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController.{NodeInfo, NodeList}
+import prowse.github.cosm1c.healthmesh.deltastream.DeltaStreamController._
 import prowse.github.cosm1c.healthmesh.poller.ComponentPollerActor._
 import prowse.github.cosm1c.healthmesh.util.Status.{Failure, SUCCESS_DONE, Success}
 
 import scala.collection.immutable
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{FiniteDuration, _}
 
 object HealthPollerMediatorActor {
@@ -58,7 +58,7 @@ class HealthPollerMediatorActor(deltaStream: DeltaStreamController, defaultPollI
 
         case PutPoller(nodeInfo) =>
             if (!healthPollers.contains(nodeInfo.id)) {
-                healthPollers += nodeInfo.id -> context.actorOf(ComponentPollerActor.props(nodeInfo, defaultPollInterim, interimOverideDuration, pollHistorySize))
+                healthPollers += nodeInfo.id -> context.actorOf(ComponentPollerActor.props(nodeInfo, new DummyHealthPoller(nodeInfo), defaultPollInterim, interimOverideDuration, pollHistorySize))
             }
 
         case DelPoller(id) =>

@@ -18,11 +18,11 @@ class DeltaStreamControllerTest extends FlatSpec with MockitoSugar {
     private implicit val materializer = ActorMaterializer()
     private implicit val log = mock[LoggingAdapter]
 
-    private val nodeInfoA1 = NodeInfo("A", healthStatus = Healthy, Seq(), Instant.ofEpochMilli(1L))
-    private val nodeInfoA2 = NodeInfo("A", healthStatus = Unhealthy, Seq(), Instant.ofEpochMilli(2L))
-    private val nodeInfoB1 = NodeInfo("B", healthStatus = Healthy, Seq(), Instant.ofEpochMilli(2L))
-    private val nodeInfoB2 = NodeInfo("B", healthStatus = Unhealthy, Seq(), Instant.ofEpochMilli(3L))
-    private val nodeInfoC1 = NodeInfo("C", healthStatus = Healthy, Seq(), Instant.ofEpochMilli(4L))
+    private val nodeInfoA1 = NodeInfo("idA", "A", healthStatus = Healthy, Seq())
+    private val nodeInfoA2 = NodeInfo("idA", "A", healthStatus = Unhealthy, Seq())
+    private val nodeInfoB1 = NodeInfo("idB", "B", healthStatus = Healthy, Seq())
+    private val nodeInfoB2 = NodeInfo("idB", "B", healthStatus = Unhealthy, Seq())
+    private val nodeInfoC1 = NodeInfo("idC", "C", healthStatus = Healthy, Seq())
 
     private def withDeltaStream(testCode: (DeltaStreamController) => Any) =
         testCode(new DeltaStreamController)

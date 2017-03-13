@@ -1,12 +1,12 @@
 /// <reference path="../typings/index.d.ts" />
 require('sigma');
 require('sigma/build/plugins/sigma.layout.forceAtlas2.min');
-require('sigma/build/plugins/sigma.plugins.dragNodes.min');
 import {NodeInfo} from './NodeInfo';
 import Sigma = SigmaJs.Sigma;
 
 export class SigmaDigraph {
 
+  private static readonly globalNodeId: string = 'GLOBAL';
   private static readonly nodeRows: number = 5;
   private static readonly layoutDelayMs: number = 200;
   private static readonly layoutDurationMs: number = 2000;
@@ -18,27 +18,18 @@ export class SigmaDigraph {
   });
 
   private nodeCount: number = 0;
-  private dragListener: SigmaJs.DragNodes;
   private topologyChanged = false;
   private layoutTimeout: number | null = null;
 
   constructor(digraphEl: HTMLElement) {
+    this.nodeAddOrUpdate(SigmaDigraph.globalNodeId, SigmaDigraph.globalNodeId, 1, 'black');
+
     this.s.addCamera('cam1');
 
     this.s.addRenderer({
       container: digraphEl,
-      camera: 'cam1' /*, // webgl incompatible with dragNodes
-       type: 'webgl'*/
-    });
-
-    this.dragListener = sigma.plugins.dragNodes(this.s, this.s.renderers[0]);
-    this.dragListener.bind('startdrag', () => {
-      if (this.s.isForceAtlas2Running()) {
-        this.s.stopForceAtlas2();
-      }
-    });
-    this.dragListener.bind('dragend', () => {
-      this.performLayout();
+      camera: 'cam1',
+      type: 'webgl'
     });
   }
 
@@ -87,9 +78,13 @@ export class SigmaDigraph {
     // console.debug(`isForceAtlas2Running = ${this.s.isForceAtlas2Running()}`);
 
     add.forEach((nodeInfo: NodeInfo) => {
-      this.nodeAddOrUpdate(nodeInfo.id, 1, SigmaDigraph.colorForNode(nodeInfo));
+      this.nodeAddOrUpdate(nodeInfo.id, nodeInfo.label, 1, SigmaDigraph.colorForNode(nodeInfo));
+      if (nodeInfo.depends.length === 0) {
+        // For testing - if no depends then link to Global
+        this.addEdgeIfNotExist(nodeInfo.id, SigmaDigraph.globalNodeId);
+      }
       nodeInfo.depends.forEach((dependId: string) => {
-        this.nodeAddOrUpdate(dependId, 1, '#a9a9a9');
+        this.nodeAddOrUpdate(dependId, dependId, 1, '#a9a9a9');
         this.addEdgeIfNotExist(nodeInfo.id, dependId);
       });
     });
@@ -108,14 +103,14 @@ export class SigmaDigraph {
     this.s.refresh();
   }
 
-  private nodeAddOrUpdate(id: string, size: number, color: string) {
+  private nodeAddOrUpdate(id: string, label: string, size: number, color: string) {
     const node = this.s.graph.nodes(id);
     if (!node) {
       this.nodeCount++;
       this.topologyChanged = true;
       this.s.graph.addNode({
         id: id,
-        label: id,
+        label: label,
         x: this.nodeCount % SigmaDigraph.nodeRows,
         y: Math.floor(this.nodeCount / SigmaDigraph.nodeRows),
         size: size,

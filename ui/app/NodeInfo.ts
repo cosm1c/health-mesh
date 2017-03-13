@@ -1,8 +1,8 @@
 export interface NodeInfo {
   id: string;
+  label: string;
   healthStatus: 'unknown' | 'healthy' | 'unhealthy';
   depends: Array<String>;
-  lastUpdate: Date;
 }
 
 export interface DeltaItem {

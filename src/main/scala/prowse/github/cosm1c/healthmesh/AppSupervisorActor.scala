@@ -29,32 +29,30 @@ import scala.util.Random
 object AppSupervisorActor {
 
     // TODO: obtain nodes from somewhere - this is randomly generate
-    private val rootName = "ROOT"
     private val numRandomNodes = 20
     private val numLevelTwoNodes = 5
 
     def addRandomNodes(deltaStreamController: DeltaStreamController)(implicit clock: Clock): Unit = {
-        deltaStreamController.add(Seq[NodeInfo](NodeInfo(rootName, Healthy, Seq.empty[String], Instant.now(clock))))
         deltaStreamController.add(Seq[NodeInfo](
-            NodeInfo("A", Healthy, Seq(rootName), Instant.now(clock)),
-            NodeInfo("B", Healthy, Seq(rootName), Instant.now(clock)),
-            NodeInfo("C", Healthy, Seq(rootName), Instant.now(clock)),
-            NodeInfo("D", Healthy, Seq(rootName), Instant.now(clock)),
-            NodeInfo("E", Healthy, Seq(rootName), Instant.now(clock)),
-            NodeInfo("F", Healthy, Seq(rootName), Instant.now(clock))))
+            NodeInfo("A", "A", Healthy, Seq()),
+            NodeInfo("B", "B", Healthy, Seq()),
+            NodeInfo("C", "C", Healthy, Seq()),
+            NodeInfo("D", "D", Healthy, Seq()),
+            NodeInfo("E", "E", Healthy, Seq()),
+            NodeInfo("F", "F", Healthy, Seq())))
         deltaStreamController.add(0 to numLevelTwoNodes map { id =>
             NodeInfo(
                 id.toString,
+                id.toString,
                 UnknownHealth,
-                Seq[String](s"${('A' + Random.nextInt(4)).asInstanceOf[Char]}"),
-                Instant.now)
+                Seq[String](s"${('A' + Random.nextInt(4)).asInstanceOf[Char]}"))
         })
         deltaStreamController.add(numLevelTwoNodes to numRandomNodes map { id =>
             NodeInfo(
                 id.toString,
+                id.toString,
                 UnknownHealth,
-                Seq[String](s"${Random.nextInt(numLevelTwoNodes)}"),
-                Instant.now)
+                Seq[String](s"${Random.nextInt(numLevelTwoNodes)}"))
         })
         ()
     }

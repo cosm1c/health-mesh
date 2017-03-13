@@ -26,7 +26,7 @@ object DeltaStreamController {
     case object Unhealthy extends HealthStatus("unhealthy")
 
 
-    case class NodeInfo(id: String, healthStatus: HealthStatus, depends: Seq[String], lastUpdate: Instant)
+    case class NodeInfo(id: String, label: String, healthStatus: HealthStatus, depends: Seq[String])
 
     case class NodeList(nodeIds: Set[String])
 
