@@ -5,7 +5,7 @@ import {SigmaDigraph} from './sigma';
 require('../less/main.less');
 
 // Used by DefinePlugin
-declare const ENV: string;
+declare const IS_PROD: string;
 
 function getElementByIdOrThrowError(elementId: string): HTMLElement {
   const el = document.getElementById(elementId);
@@ -18,7 +18,7 @@ function getElementByIdOrThrowError(elementId: string): HTMLElement {
 const digraphEl = getElementByIdOrThrowError('digraph');
 
 function calcWsUrl(): string {
-  if (ENV === 'development') {
+  if (!IS_PROD) {
     const wsUrl = 'ws://localhost:8080/ws';
     const msg = 'DEVELOPMENT MODE ENGAGED - websocket URL:';
     // '='.repeat(msg.length + wsUrl.length + 1) +

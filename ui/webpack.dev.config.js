@@ -2,70 +2,151 @@
 
 const path = require('path'),
   webpack = require('webpack'),
-  HtmlWebpackPlugin = require('html-webpack-plugin'),
-  LessPluginCleanCSS = require('less-plugin-clean-css'),
-  ExtractTextPlugin = require("extract-text-webpack-plugin");
+  HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
 
-  entry: './app/main.ts',
+  watch: true,
 
-  output: {
-    path: path.join(__dirname, "dist", "ui"),
-    filename: "[name].js",
-    publicPath: "http://localhost:9090/"
-  },
-
-  devtool: "source-map",
-
-  resolve: {
-    extensions: ["", ".ts", ".js"]
-  },
-
-  plugins: [
-    new webpack.DefinePlugin({
-      'ENV': JSON.stringify('development')
-    }),
-    new ExtractTextPlugin('[name].css'),
-    new HtmlWebpackPlugin({
-      template: 'index.html',
-      inject: true
-    })
+  entry: [
+    'webpack-dev-server/client?http://localhost:9090',
+    'webpack/hot/only-dev-server',
+    './app/main.ts'
   ],
 
+  output: {
+    filename: '[name].js',
+    path: path.resolve(__dirname, 'dist', 'ui'),
+    publicPath: '/'
+  },
+
   module: {
-    preLoaders: [
+    rules: [
       {
+        enforce: 'pre',
         test: /\.js$/,
-        loader: "source-map-loader"
-      }
-    ],
-    loaders: [
-      {
-        test: /\.less$/,
-        loader: ExtractTextPlugin.extract(
-          'css?sourceMap!less?sourceMap'
-        )
+        loader: 'source-map-loader'
       },
       {
-        test: /\.ts$/,
-        loader: "ts-loader",
+        enforce: 'pre',
+        test: /\.tsx?$/,
+        use: 'source-map-loader'
+      },
+      {
+        test: /\.css$/,
+        use: [
+          {
+            loader: 'css-loader',
+            options: {
+              minimize: false,
+              sourceMap: true
+            }
+          }
+        ]
+      },
+      {
+        test: /\.less$/,
+        use: [
+          {
+            loader: "style-loader"
+          },
+          {
+            loader: "css-loader",
+            options: {
+              sourceMap: true
+            }
+          },
+          {
+            loader: "less-loader",
+            options: {
+              sourceMap: true,
+              strictMath: true,
+              noIeCompat: true
+            }
+          }
+        ]
+      },
+      {
+        test: /\.(jpg|png|gif)$/,
+        use: 'file-loader'
+      },
+      {
+        test: /\.(woff|woff2|eot|ttf|svg)$/,
+        use: {
+          loader: 'url-loader',
+          options: {
+            limit: 100000
+          }
+        }
+      },
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
         exclude: /node_modules/
       },
       {
-        test: /sigma.*\.js?$/,
-        exclude: ['.'],
-        loaders: ['script']
+        test: /\.html$/,
+        loader: 'html-loader'
+      },
+      {
+        rules: [
+          {
+            test: /sigma.*\.js?$/,
+            //exclude: ['.'],
+            use: ['script-loader']
+          }
+        ]
       }
     ]
   },
 
-  lessLoader: {
-    lessPlugins: [
-      new LessPluginCleanCSS({
-        advanced: true,
-        sourceMapInlineSources: true
-      })
-    ]
-  }
+  resolve: {
+    modules: [__dirname, path.resolve(__dirname, '..', 'node_modules')],
+    extensions: ['.ts', '.tsx', '.js', '.jsx', '.css', '.less', '.json']
+  },
+
+  devtool: 'eval-source-map',
+
+  context: __dirname,
+
+  target: "web",
+
+  devServer: {
+    proxy: {
+      '/ws': {
+        changeOrigin: true,
+        ws: true
+      }
+    },
+    compress: true,
+    stats: true,
+    host: 'localhost',
+    port: 9090,
+    publicPath: '/',
+    contentBase: path.resolve(__dirname, 'dist'),
+    hot: true
+  },
+
+  plugins: [
+    new webpack.LoaderOptionsPlugin({
+      minimize: false,
+      debug: true,
+      options: {
+        context: __dirname
+      }
+    }),
+    new webpack.DefinePlugin({
+      // Any occurrence of process.env.NODE_ENV in the imported code is replaced with "development"
+      'process.env.NODE_ENV': JSON.stringify('development'),
+      IS_PROD: false
+    }),
+    new webpack.HotModuleReplacementPlugin(),
+    new webpack.NamedModulesPlugin(),
+    new HtmlWebpackPlugin({
+      template: 'index.html',
+      chunksSortMode: 'dependency',
+      inject: true,
+      xhtml: true
+    })
+  ]
 };

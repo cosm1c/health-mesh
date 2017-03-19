@@ -44,18 +44,12 @@ gulp.task('package', ['clean', 'test'], function (cb) {
 
 gulp.task("webpack-dev-server", ['clean'], function (cb) {
   const WebpackDevServer = require("webpack-dev-server"),
-    prodWebpackConfig = Object.create(require("./webpack.dev.config.js"));
+    devWebpackConfig = Object.create(require("./webpack.dev.config.js"));
 
-  new WebpackDevServer(webpack(prodWebpackConfig), {
-    contentBase: "http://localhost:8080",
-    quiet: false,
-    noInfo: true,
-    stats: {
-      colors: true
-    }
-  }).listen(9090, "localhost", function (err) {
-    if (err) throw err;
-    gutil.log("[webpack-dev-server]", "http://localhost:9090/webpack-dev-server/index.html");
-    cb();
-  });
+  new WebpackDevServer(webpack(devWebpackConfig))
+    .listen(9090, "localhost", function (err) {
+      if (err) throw err;
+      gutil.log("[webpack-dev-server]", "http://localhost:9090/webpack-dev-server/index.html");
+      cb();
+    });
 });

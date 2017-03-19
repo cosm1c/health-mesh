@@ -44,7 +44,7 @@ module.exports = function (config) {
      * corresponding karma-*** modules and include them in the list of plugins
      * as well as below.
      */
-    frameworks: ["mocha", "chai"/*, "sinon"*/],
+    frameworks: ["jasmine"],
 
     logLevel: config.LOG_INFO,
 
@@ -73,7 +73,7 @@ module.exports = function (config) {
      * use the karma-mocha-reporter, you must npm install the module and
      * include it in the list of plugins.
      */
-    reporters: ["mocha"],
+    reporters: ['progress'],
 
     /*
      * If true, Karma will start and capture all configured browsers, run
