@@ -107,7 +107,18 @@ module.exports = {
       minimize: true,
       debug: false,
       options: {
-        context: __dirname
+        context: __dirname,
+        htmlLoader: {
+          minimize: true,
+          removeAttributeQuotes: false,
+          caseSensitive: true,
+          customAttrSurround: [
+            [/#/, /(?:)/],
+            [/\*/, /(?:)/],
+            [/\[?\(?/, /(?:)/]
+          ],
+          customAttrAssign: [/\)?]?=/]
+        }
       }
     }),
     new webpack.DefinePlugin({
@@ -118,24 +129,25 @@ module.exports = {
     new ExtractTextPlugin('[name]-[contenthash].min.css'),
     new webpack.optimize.UglifyJsPlugin({
       beautify: false,
+      output: {
+        comments: false
+      },
       mangle: {
-        screw_ie8: true,
-        keep_fnames: true
+        screw_ie8: true
       },
       compress: {
+        screw_ie8: true,
         warnings: false,
-        screw_ie8: true/*,
-         lint: true,
-         'if_return': true,
-         'join_vars': true,
-         cascade: true,
-         'dead_code': true,
-         conditionals: true,
-         booleans: true,
-         loops: true,
-         unused: true*/
-      },
-      comments: false
+        conditionals: true,
+        unused: true,
+        comparisons: true,
+        sequences: true,
+        dead_code: true,
+        evaluate: true,
+        if_return: true,
+        join_vars: true,
+        negate_iife: false // we need this for lazy v8
+      }
     }),
     new HtmlWebpackPlugin({
       template: 'index.html',
@@ -154,5 +166,14 @@ module.exports = {
         sortClassName: true
       }
     })
-  ]
+  ],
+
+  node: {
+    global: true,
+    crypto: 'empty',
+    process: false,
+    module: false,
+    clearImmediate: false,
+    setImmediate: false
+  }
 };

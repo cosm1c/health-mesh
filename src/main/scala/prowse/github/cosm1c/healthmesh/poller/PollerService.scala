@@ -84,7 +84,7 @@ class PollerService(healthPollerMediatorActor: ActorRef, minAllowedPollInterim: 
                     validate(intervalValidator(maybePollInterimMs), "pollInterimMs below allowed threshold") {
                         val eventualStatus = (healthPollerMediatorActor ? UpdatePollInterval(nodeId, maybePollInterimMs, maybePollNow)).mapTo[Status[Done]]
                         onSuccess(eventualStatus) {
-                            case Success(pollInterval) =>
+                            case Success(_) =>
                                 complete(OK)
 
                             case Failure(throwable) =>

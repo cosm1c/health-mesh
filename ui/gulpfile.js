@@ -34,11 +34,11 @@ gulp.task('package', ['clean', 'test'], function (cb) {
   const webpackConfig = require('./webpack.prd.config.js');
 
   webpack(webpackConfig, function (err, stats) {
-    if (err) throw err;
+    if (err || stats.hasErrors()) throw err;
     gutil.log("[webpack]", stats.toString({
       // see: https://webpack.github.io/docs/node.js-api.html#stats-tostring
     }));
-    cb();
+    cb(err);
   });
 });
 

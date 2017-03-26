@@ -132,7 +132,18 @@ module.exports = {
       minimize: false,
       debug: true,
       options: {
-        context: __dirname
+        context: __dirname,
+        htmlLoader: {
+          minimize: true,
+          removeAttributeQuotes: false,
+          caseSensitive: true,
+          customAttrSurround: [
+            [/#/, /(?:)/],
+            [/\*/, /(?:)/],
+            [/\[?\(?/, /(?:)/]
+          ],
+          customAttrAssign: [/\)?]?=/]
+        }
       }
     }),
     new webpack.DefinePlugin({
@@ -148,5 +159,14 @@ module.exports = {
       inject: true,
       xhtml: true
     })
-  ]
+  ],
+
+  node: {
+    global: true,
+    crypto: 'empty',
+    process: false,
+    module: false,
+    clearImmediate: false,
+    setImmediate: false
+  }
 };
