@@ -36,9 +36,13 @@ pipeline {
             steps {
                 milestone label: 'Staged for User acceptance.', ordinal: 1
                 lock(resource: 'Staging environment', inversePrecedence: true) {
-                    sh 'sbt clean assembly'
-                    sh 'java -jar target/scala-2.12/health-mesh-assembly-1.0.jar 2>&1 > target/staging.log & echo $! > target/staging.PID'
-                    input 'Does the staging environment look ok?'
+                    ansiColor('xterm') {
+                        timeout(10) {
+                            sh 'sbt clean assembly'
+                            sh 'java -jar target/scala-2.12/health-mesh-assembly-1.0.jar 2>&1 > target/staging.log & echo $! > target/staging.PID'
+                        }
+                    }
+                    input 'Does the staging environment look ok at http://localhost:18080/ ?'
                     milestone label: 'Staged for User acceptance.', ordinal: 2
                 }
             }
