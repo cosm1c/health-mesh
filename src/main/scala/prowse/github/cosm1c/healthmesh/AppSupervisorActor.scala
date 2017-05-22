@@ -1,6 +1,6 @@
 package prowse.github.cosm1c.healthmesh
 
-import java.time.{Clock, Instant, Duration => JDuration}
+import java.time.{Clock, Duration => JDuration}
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorLogging}
@@ -12,7 +12,6 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.PathMatchers.RemainingPath
 import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Flow
-import akka.util.Timeout
 import ch.megard.akka.http.cors.CorsDirectives.cors
 import com.typesafe.config.ConfigFactory
 import prowse.github.cosm1c.healthmesh.AppSupervisorActor.javaToScalaDuration
@@ -23,7 +22,6 @@ import prowse.github.cosm1c.healthmesh.swagger.SwaggerDocService
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.language.postfixOps
 import scala.util.Random
 
 object AppSupervisorActor {
@@ -32,7 +30,7 @@ object AppSupervisorActor {
     private val numRandomNodes = 20
     private val numLevelTwoNodes = 5
 
-    def addRandomNodes(deltaStreamController: DeltaStreamController)(implicit clock: Clock): Unit = {
+    def addRandomNodes(deltaStreamController: DeltaStreamController): Unit = {
         deltaStreamController.add(Seq[NodeInfo](
             NodeInfo("A", "A", Healthy, Seq()),
             NodeInfo("B", "B", Healthy, Seq()),
@@ -66,8 +64,6 @@ class AppSupervisorActor extends Actor with ActorLogging with SprayJsonSupport {
     private implicit val executionContextExecutor = context.dispatcher
     private implicit val materializer = ActorMaterializer()
     private implicit val clock = Clock.systemUTC()
-    private implicit val _log = log
-    private implicit val timeout = Timeout(5 seconds)
 
     private val config = ConfigFactory.load()
     private val deltaStreamController = new DeltaStreamController

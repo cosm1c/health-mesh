@@ -26,7 +26,8 @@ gulp.task('test', function (done) {
 
   new Server({
     configFile: __dirname + '/karma.conf.js',
-    singleRun: true
+    singleRun: true,
+    reporters: ['junit']
   }, done).start();
 });
 

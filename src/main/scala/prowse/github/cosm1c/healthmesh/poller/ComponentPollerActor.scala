@@ -10,7 +10,6 @@ import prowse.github.cosm1c.healthmesh.util.RingBuffer
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object ComponentPollerActor {
 

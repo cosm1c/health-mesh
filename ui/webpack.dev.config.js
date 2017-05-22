@@ -8,11 +8,19 @@ module.exports = {
 
   watch: true,
 
+  entry: {
+    app: './app/main.ts',
+    polyfills: './polyfills.ts',
+    vendor: './vendor.ts'
+  },
+
+/*
   entry: [
     'webpack-dev-server/client?http://localhost:9090',
     'webpack/hot/only-dev-server',
     './app/main.ts'
   ],
+*/
 
   output: {
     filename: '[name].js',

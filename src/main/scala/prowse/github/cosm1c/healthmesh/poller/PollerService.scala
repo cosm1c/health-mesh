@@ -80,7 +80,7 @@ class PollerService(healthPollerMediatorActor: ActorRef, minAllowedPollInterim: 
     def updatePollInterval: Route = {
         post {
             path(Remaining) { nodeId =>
-                parameters('pollInterimMs.as[Long].?, 'pollNow.as[Boolean].?) { (maybePollInterimMs, maybePollNow) =>
+                parameters(('pollInterimMs.as[Long].?, 'pollNow.as[Boolean].?)) { (maybePollInterimMs, maybePollNow) =>
                     validate(intervalValidator(maybePollInterimMs), "pollInterimMs below allowed threshold") {
                         val eventualStatus = (healthPollerMediatorActor ? UpdatePollInterval(nodeId, maybePollInterimMs, maybePollNow)).mapTo[Status[Done]]
                         onSuccess(eventualStatus) {

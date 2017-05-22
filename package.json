@@ -8,6 +8,8 @@
     "sigma": "*"
   },
   "devDependencies": {
+    "@types/jasmine": "*",
+    "@types/sigmajs": "*",
     "css-loader": "*",
     "extract-text-webpack-plugin": "*",
     "file-loader": "*",
@@ -18,6 +20,7 @@
     "jasmine-core": "*",
     "karma": "*",
     "karma-jasmine": "*",
+    "karma-junit-reporter": "*",
     "karma-phantomjs-launcher": "*",
     "karma-phantomjs-shim": "*",
     "karma-sourcemap-loader": "*",
@@ -25,7 +28,9 @@
     "less": "*",
     "less-loader": "*",
     "less-plugin-clean-css": "*",
+    "null-loader": "*",
     "phantomjs-prebuilt": "*",
+    "raw-loader": "*",
     "rimraf": "*",
     "script-loader": "*",
     "source-map-loader": "*",
@@ -38,6 +43,8 @@
     "webpack-dev-server": "*"
   },
   "scripts": {
+    "webpack-dev-server": "gulp --gulpfile ui/gulpfile.js webpack-dev-server",
+    "ci-test": "gulp --gulpfile ui/gulpfile.js test",
     "package": "gulp --gulpfile ui/gulpfile.js package"
   },
   "author": "Cory Prowse <cory@prowse.com>",

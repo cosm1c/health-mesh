@@ -24,11 +24,8 @@ export class SigmaDigraph {
   constructor(digraphEl: HTMLElement) {
     this.nodeAddOrUpdate(SigmaDigraph.globalNodeId, SigmaDigraph.globalNodeId, 1, 'black');
 
-    this.s.addCamera('cam1');
-
     this.s.addRenderer({
       container: digraphEl,
-      camera: 'cam1',
       type: 'webgl'
     });
   }

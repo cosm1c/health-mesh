@@ -2,6 +2,8 @@
   "compilerOptions": {
     "target": "ES5",
     "module": "CommonJS",
+    "strict": true,
+    "moduleResolution": "node",
     "alwaysStrict": true,
     "noImplicitAny": true,
     "noImplicitReturns": true,
@@ -14,11 +16,12 @@
     "strictNullChecks": true,
     "stripInternal": true,
     "outDir": "ui/dist",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "suppressImplicitAnyIndexErrors": true,
     "lib": [
-      "DOM",
-      "ES6",
-      "ES2015.Collection",
-      "ES2015.Promise"
+      "es2015",
+      "dom"
     ]
   },
   "files": [

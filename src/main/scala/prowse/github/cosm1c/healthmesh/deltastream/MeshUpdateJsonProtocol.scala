@@ -7,7 +7,6 @@ import spray.json.{DefaultJsonProtocol, JsString, JsValue, JsonFormat, RootJsonF
 object MeshUpdateJsonProtocol {
 
     import DefaultJsonProtocol._
-    import JsonFormats._
 
     implicit val healthStatusJsonFormat = new JsonFormat[HealthStatus] {
         override def read(json: JsValue): HealthStatus = json match {

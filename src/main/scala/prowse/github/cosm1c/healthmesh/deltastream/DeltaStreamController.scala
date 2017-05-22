@@ -1,9 +1,6 @@
 package prowse.github.cosm1c.healthmesh.deltastream
 
-import java.time.Instant
-
 import akka.NotUsed
-import akka.event.LoggingAdapter
 import akka.stream.scaladsl.{Broadcast, BroadcastHub, Concat, Flow, GraphDSL, Keep, Sink, Source}
 import akka.stream.{Materializer, OverflowStrategy, QueueOfferResult, SourceShape}
 
@@ -44,7 +41,7 @@ object DeltaStreamController {
     val zeroSnapshotAndDelta = SnapshotAndDelta(immutable.Map.empty[String, NodeInfo], emptyDelta)
 }
 
-class DeltaStreamController()(implicit log: LoggingAdapter, materializer: Materializer) {
+class DeltaStreamController()(implicit materializer: Materializer) {
 
     import DeltaStreamController._
 

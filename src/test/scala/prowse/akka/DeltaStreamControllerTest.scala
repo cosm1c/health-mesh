@@ -1,9 +1,6 @@
 package prowse.akka
 
-import java.time.Instant
-
 import akka.actor.ActorSystem
-import akka.event.LoggingAdapter
 import akka.stream.ActorMaterializer
 import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.scaladsl.TestSink
@@ -16,7 +13,6 @@ class DeltaStreamControllerTest extends FlatSpec with MockitoSugar {
 
     private implicit val actorSystem = ActorSystem()
     private implicit val materializer = ActorMaterializer()
-    private implicit val log = mock[LoggingAdapter]
 
     private val nodeInfoA1 = NodeInfo("idA", "A", healthStatus = Healthy, Seq())
     private val nodeInfoA2 = NodeInfo("idA", "A", healthStatus = Unhealthy, Seq())

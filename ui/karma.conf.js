@@ -75,6 +75,11 @@ module.exports = function (config) {
      */
     reporters: ['progress'],
 
+    junitReporter: {
+      outputDir: '../target/ui/',
+      useBrowserName: true // add browser name to report and classes names
+    },
+
     /*
      * If true, Karma will start and capture all configured browsers, run
      * tests and then exit with an exit code of 0 or 1 depending on whether

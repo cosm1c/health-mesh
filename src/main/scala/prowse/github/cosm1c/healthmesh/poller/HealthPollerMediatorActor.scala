@@ -1,6 +1,6 @@
 package prowse.github.cosm1c.healthmesh.poller
 
-import java.time.{Clock, Instant}
+import java.time.Clock
 import java.util.concurrent.TimeUnit
 
 import akka.Done
@@ -14,7 +14,7 @@ import prowse.github.cosm1c.healthmesh.poller.ComponentPollerActor._
 import prowse.github.cosm1c.healthmesh.util.Status.{Failure, SUCCESS_DONE, Success}
 
 import scala.collection.immutable
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{FiniteDuration, _}
 
 object HealthPollerMediatorActor {
