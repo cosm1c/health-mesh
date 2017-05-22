@@ -7,8 +7,8 @@ pipeline {
     stages {
         stage('Setup') {
             steps {
-                sh 'echo ${env.BUILD_TAG} at ${env.BUILD_URL} WORKSPACE=${env.WORKSPACE}'
-                sh 'echo GIT_COMMIT=${env.GIT_COMMIT} GIT_URL=${env.GIT_URL} GIT_BRANCH=${env.GIT_BRANCH}'
+                sh 'echo ${BUILD_TAG} at ${BUILD_URL} WORKSPACE=${WORKSPACE}'
+                sh 'echo GIT_COMMIT=${GIT_COMMIT} GIT_URL=${GIT_URL} GIT_BRANCH=${GIT_BRANCH}'
                 checkout scm
             }
         }
