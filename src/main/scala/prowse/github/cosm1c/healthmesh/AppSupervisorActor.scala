@@ -106,7 +106,7 @@ class AppSupervisorActor extends Actor with ActorLogging with SprayJsonSupport {
     private var bindingFuture: Future[ServerBinding] = _
 
     override def preStart(): Unit = {
-        bindingFuture = Http().bindAndHandle(route, "0.0.0.0", 8080)
+        bindingFuture = Http().bindAndHandle(route, "0.0.0.0", 18080)
         bindingFuture.onComplete(serverBinding => log.info("Server online - {}", serverBinding))
     }
 

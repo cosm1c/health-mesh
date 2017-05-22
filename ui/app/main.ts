@@ -19,7 +19,7 @@ const digraphEl = getElementByIdOrThrowError('digraph');
 
 function calcWsUrl(): string {
   if (!IS_PROD) {
-    const wsUrl = 'ws://localhost:8080/ws';
+    const wsUrl = 'ws://localhost:18080/ws';
     const msg = 'DEVELOPMENT MODE ENGAGED - websocket URL:';
     // '='.repeat(msg.length + wsUrl.length + 1) +
     console.warn(`======================================\n${msg}`, wsUrl);
