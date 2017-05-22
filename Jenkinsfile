@@ -7,8 +7,7 @@ pipeline {
     stages {
         stage('Setup') {
             steps {
-                sh 'echo ${BUILD_TAG} at ${BUILD_URL} WORKSPACE=${WORKSPACE}'
-                sh 'echo GIT_COMMIT=${GIT_COMMIT} GIT_URL=${GIT_URL} GIT_BRANCH=${GIT_BRANCH}'
+                echo "BUILD_TAG=${env.BUILD_TAG} BUILD_URL=${env.BUILD_URL} WORKSPACE=${env.WORKSPACE}"
                 checkout scm
             }
         }
@@ -34,7 +33,7 @@ pipeline {
         }
         stage('Staging') {
             steps {
-                milestone label: 'Staged for User acceptance.', ordinal: 1
+                milestone label: 'Staging for User acceptance.', ordinal: 1
                 lock(resource: 'Staging environment', inversePrecedence: true) {
                     ansiColor('xterm') {
                         timeout(10) {
@@ -43,13 +42,24 @@ pipeline {
                         }
                     }
                     input 'Does the staging environment look ok at http://localhost:18080/ ?'
-                    milestone label: 'Staged for User acceptance.', ordinal: 2
+                    milestone label: 'User accepted.', ordinal: 2
+                    archiveArtifacts artifacts: 'target/scala-2.12/health-mesh-assembly-1.0.jar', fingerprint: true
                 }
             }
             post {
                 always {
                     sh 'kill -9 `cat target/staging.PID`'
                 }
+            }
+        }
+        stage('Deploy') {
+            when {
+                expression {
+                    currentBuild.result == null || currentBuild.result == 'SUCCESS'
+                }
+            }
+            steps {
+                echo 'TODO: deploy successful build'
             }
         }
     }
