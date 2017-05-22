@@ -1,9 +1,8 @@
 # Health-Mesh #
 
 An example of displaying a network of nodes in a digraph with health.
-Supports Jenkins Blue Ocean with Jenkinsfile (documentation available in running Jenkins
-at: [http://localhost:8080/pipeline-syntax/](http://localhost:8080/pipeline-syntax/)).
-
+Supports Jenkins Blue Ocean with Jenkinsfile.
+ 
 Tech Stack:
 * [Akka HTTP](http://doc.akka.io/docs/akka-http/current/scala.html) (Scala 2.12)
 * [Swagger](http://swagger.io/)
@@ -13,6 +12,10 @@ Tech Stack:
 * [WebSocket](https://www.w3.org/TR/websockets/)
 * [Protobuf 3 (Java and JavaScript)](https://developers.google.com/protocol-buffers/)
 * [SigmaJS](http://sigmajs.org/)
+
+## Jenkinsfile
+See: [Using a Jenkinsfile](https://jenkins.io/doc/book/pipeline/jenkinsfile/)
+Documentation also available in a running Jenkins instance: [http://localhost:8080/pipeline-syntax/](http://localhost:8080/pipeline-syntax/).
 
 
 ## SBT Development Environment ##
