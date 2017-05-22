@@ -1,6 +1,8 @@
 # Health-Mesh #
 
 An example of displaying a network of nodes in a digraph with health.
+Supports Jenkins Blue Ocean with Jenkinsfile (documentation available in running Jenkins
+at: [http://localhost:8080/pipeline-syntax/](http://localhost:8080/pipeline-syntax/)).
 
 Tech Stack:
 * [Akka HTTP](http://doc.akka.io/docs/akka-http/current/scala.html) (Scala 2.12)
