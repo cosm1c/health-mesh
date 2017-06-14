@@ -1,7 +1,7 @@
 /// <reference path="../typings/index.d.ts" />
 require('sigma');
 require('sigma/build/plugins/sigma.layout.forceAtlas2.min');
-import {NodeInfo} from './NodeInfo';
+import {Delta} from './NodeInfo';
 import Sigma = SigmaJs.Sigma;
 
 export class SigmaDigraph {
@@ -59,30 +59,36 @@ export class SigmaDigraph {
     }, SigmaDigraph.layoutDelayMs);
   }
 
-  static colorForNode(nodeInfo: NodeInfo): string {
-    switch (nodeInfo.healthStatus) {
-      case 'unhealthy':
-        return '#ff0000';
-      case 'healthy':
-        return '#00FF00';
-      default:
-        return '#ffa500';
-    }
-  }
-
-  update(add: NodeInfo[], del: NodeInfo[]) {
-    console.debug(`${new Date()}\n add:`, add, ' del:', del);
+  update(delta: Delta) {
+    console.debug(`${new Date()}\n delta: ${JSON.stringify(delta)}`);
     // console.debug(`isForceAtlas2Running = ${this.s.isForceAtlas2Running()}`);
 
-    add.forEach((nodeInfo: NodeInfo) => {
-      this.nodeAddOrUpdate(nodeInfo.id, nodeInfo.label, 1, SigmaDigraph.colorForNode(nodeInfo));
+    // TODO: delete
+    // delta.removed.forEach(id => )
+
+    Object.keys(delta.updated).map((id) => {
+      let nodeInfo = delta.updated[id];
+      this.nodeAddOrUpdate(id, nodeInfo.label, 1, nodeInfo.cssHexColor);
       if (nodeInfo.depends.length === 0) {
         // For testing - if no depends then link to Global
-        this.addEdgeIfNotExist(nodeInfo.id, SigmaDigraph.globalNodeId);
+        this.addEdgeIfNotExist(id, SigmaDigraph.globalNodeId);
       }
       nodeInfo.depends.forEach((dependId: string) => {
         this.nodeAddOrUpdate(dependId, dependId, 1, '#a9a9a9');
-        this.addEdgeIfNotExist(nodeInfo.id, dependId);
+        this.addEdgeIfNotExist(id, dependId);
+      });
+    });
+
+    Object.keys(delta.added).map((id) => {
+      let nodeInfo = delta.added[id];
+      this.nodeAddOrUpdate(id, nodeInfo.label, 1, nodeInfo.cssHexColor);
+      if (nodeInfo.depends.length === 0) {
+        // For testing - if no depends then link to Global
+        this.addEdgeIfNotExist(id, SigmaDigraph.globalNodeId);
+      }
+      nodeInfo.depends.forEach((dependId: string) => {
+        this.nodeAddOrUpdate(dependId, dependId, 1, '#a9a9a9');
+        this.addEdgeIfNotExist(id, dependId);
       });
     });
 

@@ -9,9 +9,7 @@ module.exports = {
   watch: true,
 
   entry: {
-    app: './app/main.ts',
-    polyfills: './polyfills.ts',
-    vendor: './vendor.ts'
+    app: './app/main.ts'
   },
 
 /*

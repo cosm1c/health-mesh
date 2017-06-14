@@ -1,8 +1,7 @@
 export interface NodeInfo {
-  id: string;
   label: string;
-  healthStatus: 'unknown' | 'healthy' | 'unhealthy';
   depends: Array<String>;
+  cssHexColor: string;
 }
 
 export interface DeltaItem {
@@ -10,6 +9,7 @@ export interface DeltaItem {
 }
 
 export interface Delta {
-  add: DeltaItem;
-  del: DeltaItem;
+  added: DeltaItem;
+  updated: DeltaItem;
+  removed: Array<string>;
 }

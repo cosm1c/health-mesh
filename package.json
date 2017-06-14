@@ -4,12 +4,13 @@
   "description": "UI sub-project within sbt",
   "main": "./ui/dist/bundle.js",
   "dependencies": {
-    "rxjs": "*",
-    "sigma": "*"
+    "rxjs": "^5.4.0",
+    "sigma": "^1.2.0"
   },
   "devDependencies": {
     "@types/jasmine": "*",
     "@types/sigmajs": "*",
+    "@types/webcomponents.js": "*",
     "css-loader": "*",
     "extract-text-webpack-plugin": "*",
     "file-loader": "*",

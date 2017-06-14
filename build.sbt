@@ -1,7 +1,7 @@
 import sbt.Keys._
 
-val akkaVersion = "2.4.17"
-val akkaHttpVersion = "10.0.4"
+val akkaVersion = "2.5.2"
+val akkaHttpVersion = "10.0.7"
 
 lazy val root = (project in file("."))
   .enablePlugins(BuildInfoPlugin)
@@ -16,6 +16,7 @@ lazy val root = (project in file("."))
     scalaVersion := "2.12.2",
 
     libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-stream" % akkaVersion,
       "com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,

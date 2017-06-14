@@ -1,5 +1,5 @@
 import {WebSocketSubject, WebSocketSubjectConfig} from 'rxjs/observable/dom/WebSocketSubject';
-import {Delta, NodeInfo} from './NodeInfo';
+import {Delta} from './NodeInfo';
 import {SigmaDigraph} from './sigma';
 
 require('../less/main.less');
@@ -62,11 +62,7 @@ window.onload = () => {
   socket.subscribe(
     // next
     function (delta: Delta) {
-      // console.debug('Delta', delta);
-      const addNodes: NodeInfo[] = Object.keys(delta.add).map((id) => delta.add[id]);
-      const delNodes: NodeInfo[] = Object.keys(delta.del).map((id) => delta.del[id]);
-      // console.debug('add:', addNodes, ' del:', delNodes);
-      digraph.update(addNodes, delNodes);
+      digraph.update(delta);
     },
     // error
     function (error: any) {

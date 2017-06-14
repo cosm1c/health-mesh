@@ -16,10 +16,10 @@
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <scala.version>2.12.1</scala.version>
+        <scala.version>2.12.2</scala.version>
         <scala.compat.version>2.12</scala.compat.version>
-        <akka.version>2.4.16</akka.version>
-        <akka-http.version>10.0.3</akka-http.version>
+        <akka.version>2.5.2</akka.version>
+        <akka-http.version>10.0.7</akka-http.version>
 
         <app.main.class>prowse.github.cosm1c.healthmesh.Main</app.main.class>
     </properties>
