@@ -1,8 +1,7 @@
 'use strict';
 
 const gulp = require('gulp'),
-  gutil = require('gulp-util'),
-  webpack = require('webpack');
+  gutil = require('gulp-util');
 
 gulp.task('default', function (cb) {
   gutil.log('Tasks are:');
@@ -16,41 +15,34 @@ gulp.task('default', function (cb) {
 gulp.task('clean', function (cb) {
   const rimraf = require("rimraf");
 
-  rimraf('dist', function () {
-    rimraf('generated', cb);
-  });
+  rimraf('../target/classes/ui', cb);
 });
 
 gulp.task('test', function (done) {
-  const Server = require('karma').Server;
-
-  new Server({
-    configFile: __dirname + '/karma.conf.js',
-    singleRun: true,
-    reporters: ['junit']
-  }, done).start();
+  require('npm-run').exec('jest', {cwd: __dirname + '/..'}, done);
 });
 
 gulp.task('package', ['clean', 'test'], function (cb) {
-  const webpackConfig = require('./webpack.prd.config.js');
+  const webpackConfig = require('./webpack.prd.config.js'),
+    webpack = require('webpack');
 
   webpack(webpackConfig, function (err, stats) {
     if (err || stats.hasErrors()) throw err;
-    gutil.log("[webpack]", stats.toString({
-      // see: https://webpack.github.io/docs/node.js-api.html#stats-tostring
-    }));
-    cb(err);
+    // see: https://webpack.github.io/docs/node.js-api.html#stats-tostring
+    gutil.log("[webpack stats]", stats.toString());
+    cb();
   });
 });
 
 gulp.task("webpack-dev-server", ['clean'], function (cb) {
-  const WebpackDevServer = require("webpack-dev-server"),
-    devWebpackConfig = Object.create(require("./webpack.dev.config.js"));
+  const webpack = require('webpack'),
+    WebpackDevServer = require("webpack-dev-server"),
+    devWebpackConfig = require("./webpack.dev.config.js");
 
   new WebpackDevServer(webpack(devWebpackConfig))
     .listen(9090, "localhost", function (err) {
       if (err) throw err;
-      gutil.log("[webpack-dev-server]", "http://localhost:9090/webpack-dev-server/index.html");
+      gutil.log(gutil.colors.inverse("[webpack-dev-server]", "http://localhost:9090/webpack-dev-server/index.html"));
       cb();
     });
 });

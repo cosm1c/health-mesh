@@ -8,8 +8,8 @@ import akka.util.Timeout
 import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent.{ExampleAgentId, ExampleConfig, ExampleRequestPayload, ExampleResponsePayload}
 import spray.json.JsValue
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Success, Try}
 
 object AgentPoolActor extends SprayJsonSupport {
@@ -56,8 +56,8 @@ class AgentPoolActor(agentCreator: ExampleConfig => ActorRef) extends Actor with
 
     import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor._
 
-    private implicit val timeout = Timeout(1.second)
-    private implicit val executionContext = context.dispatcher
+    private implicit val timeout: Timeout = Timeout(1.second)
+    private implicit val executionContext: ExecutionContextExecutor = context.dispatcher
 
     private var pool = Map.empty[ExampleAgentId, ActorRef]
 

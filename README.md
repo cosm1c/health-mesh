@@ -1,21 +1,37 @@
 # Health-Mesh #
 
-An example of displaying a network of nodes in a digraph with health.
+Network graph of nodes with realtime health over WebSocket.
 Supports Jenkins Blue Ocean with Jenkinsfile.
  
 Tech Stack:
-* [Akka HTTP](http://doc.akka.io/docs/akka-http/current/scala.html) (Scala 2.12)
-* [Swagger](http://swagger.io/)
+* [SBT](http://www.scala-sbt.org/) and [Maven](https://maven.apache.org/) builds 
+* [Webpack 3](https://webpack.github.io/) with [GulpJS 3](http://gulpjs.com/)
+* [Scala 2.12](https://www.scala-lang.org/)
+* [TypeScript 2.5](https://www.typescriptlang.org/)
+* [Akka](http://akka.io/) with [Akka Streams](http://doc.akka.io/docs/akka/current/scala/stream/index.html)
+ and [Akka HTTP](http://doc.akka.io/docs/akka-http/current/scala/http/index.html) 
+* [Swagger](https://swagger.io/)
+* [Immutable JS](https://facebook.github.io/immutable-js/)
+ with [typed-immutable-record](https://github.com/rangle/typed-immutable-record)
+  and [redux-immutable](https://github.com/gajus/redux-immutable)
 * [RxJS 5](http://reactivex.io/rxjs/)
-* [TypeScript 2.1](https://www.typescriptlang.org/)
-* [Webpack 1](https://webpack.github.io/) within [GulpJS 3](http://gulpjs.com/)
 * [WebSocket](https://www.w3.org/TR/websockets/)
-* [Protobuf 3 (Java and JavaScript)](https://developers.google.com/protocol-buffers/)
-* [SigmaJS](http://sigmajs.org/)
+* [Jest](https://facebook.github.io/jest/)
+* [React](https://facebook.github.io/react/) with [React Modal](https://reactcommunity.org/react-modal/)
+ and [React Redux](http://redux.js.org/docs/basics/UsageWithReact.html)
+* [Redux](http://redux.js.org/) with [redux-observable](https://redux-observable.js.org/)
+ and [react-redux-typescript](https://github.com/piotrwitek/react-redux-typescript)
+* [Vis.js](http://visjs.org/)
+* [normalize.css](https://necolas.github.io/normalize.css/)
+* [reselect](https://github.com/reactjs/reselect)
+* [classnames](https://github.com/JedWatson/classnames)
+* [Less CSS](http://lesscss.org/)
+
 
 ## Jenkinsfile
 See: [Using a Jenkinsfile](https://jenkins.io/doc/book/pipeline/jenkinsfile/)
-Documentation also available in a running Jenkins instance: [http://localhost:8080/pipeline-syntax/](http://localhost:8080/pipeline-syntax/).
+Documentation also available in a running Jenkins instance:
+[http://localhost:8080/pipeline-syntax/](http://localhost:8080/pipeline-syntax/).
 
 
 ## SBT Development Environment ##
@@ -26,7 +42,7 @@ Terminal 1 - start Akka HTTP Server:
 
 Terminal 2 - start WebPack Dev Server:
 
-    cd ui && gulp webpack-dev-server
+    npm run webpack-dev-server
 
 
 ## SBT Release Command ##
@@ -38,11 +54,11 @@ Terminal 2 - start WebPack Dev Server:
 
 Terminal 1 - start Akka HTTP Server:
 
-    mvn exec:java
+    mvn compile exec:java
 
 Terminal 2 - start WebPack Dev Server:
 
-    cd ui && gulp webpack-dev-server
+    npm run webpack-dev-server
 
 
 ## Maven Release Command ##

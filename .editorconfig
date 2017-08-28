@@ -10,7 +10,7 @@ indent_style = space
 insert_final_newline = true
 trim_trailing_whitespace=true
 
-[*.{js,ts,less,sbt,json}]
+[*.{js,jsx,ts,tsx,less,sbt,json}]
 indent_style = space
 indent_size = 2
 
@@ -20,4 +20,3 @@ insert_final_newline = false
 
 [*.md]
 trim_trailing_whitespace=false
-

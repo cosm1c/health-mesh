@@ -16,7 +16,7 @@ module.exports = {
 
   bail: true,
 
-  entry: './app/main.ts',
+  entry: './app/index.tsx',
 
   output: {
     filename: '[name].[chunkhash].js',
@@ -26,6 +26,26 @@ module.exports = {
 
   module: {
     rules: [
+      {
+        test: /\.(jpg|png|gif)$/,
+        use: 'file-loader'
+      },
+      {
+        test: /\.(woff|woff2|eot|ttf|svg)$/,
+        use: {
+          loader: 'url-loader',
+          options: {
+            limit: 100000
+          }
+        }
+      },
+      {
+        test: /\.css$/,
+        use: ExtractTextPlugin.extract({
+          fallback: "style-loader",
+          use: "css-loader"
+        })
+      },
       {
         test: /\.less$/,
         use: extractLess.extract({
@@ -50,42 +70,13 @@ module.exports = {
         })
       },
       {
-        test: /\.css$/,
-        use: ExtractTextPlugin.extract({
-          fallback: "style-loader",
-          use: "css-loader"
-        })
-      },
-      {
-        test: /\.(jpg|png|gif)$/,
-        use: 'file-loader'
-      },
-      {
-        test: /\.(woff|woff2|eot|ttf|svg)$/,
-        use: {
-          loader: 'url-loader',
-          options: {
-            limit: 100000
-          }
-        }
+        test: /\.html$/,
+        loader: 'html-loader'
       },
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
         exclude: /node_modules/
-      },
-      {
-        test: /\.html$/,
-        loader: 'html-loader'
-      },
-      {
-        rules: [
-          {
-            test: /sigma.*\.js?$/,
-            //exclude: ['.'],
-            use: ['script-loader']
-          }
-        ]
       }
     ]
   },
@@ -111,22 +102,16 @@ module.exports = {
         htmlLoader: {
           minimize: true,
           removeAttributeQuotes: false,
-          caseSensitive: true,
-          customAttrSurround: [
-            [/#/, /(?:)/],
-            [/\*/, /(?:)/],
-            [/\[?\(?/, /(?:)/]
-          ],
-          customAttrAssign: [/\)?]?=/]
+          caseSensitive: true
         }
       }
     }),
     new webpack.DefinePlugin({
-      // Any occurrence of process.env.NODE_ENV in the imported code is replaced with "production"
       'process.env.NODE_ENV': JSON.stringify(ENV),
       IS_PROD: true
     }),
     new ExtractTextPlugin('[name]-[contenthash].min.css'),
+    // TODO: use Google Closure instead of UglifyJS
     new webpack.optimize.UglifyJsPlugin({
       beautify: false,
       output: {

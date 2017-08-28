@@ -1,0 +1,92 @@
+@import '../../node_modules/normalize.css/normalize.css';
+
+html, body,
+[data-reactroot],
+#root,
+.home-container {
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+}
+
+@header-height: 2.5rem;
+@statusbar-height: 1.5rem;
+@content-height: (100vh - @header-height - @statusbar-height);
+@search-height: 2rem;
+@listview-height: (@content-height - @search-height);
+
+.home-container {
+
+  .home-header {
+    height: @header-height;
+    background-color: #1e90ff;
+
+    ul, li {
+      display: inline;
+
+      .brand {
+        font-size: 1.5em;
+      }
+
+      .brand,
+      .tech-stack,
+      .swagger-json,
+      .about {
+        color: #000000;
+      }
+
+      &:not(:first-child) {
+        padding-left: 1rem;
+      }
+    }
+  }
+
+  .home-digraph {
+  }
+}
+
+.digraph {
+  display: grid;
+  grid-template-rows: @statusbar-height auto;
+  grid-template-columns: 1fr 15rem;
+  grid-template-areas: "statusbar statusbar" "digraph listview";
+
+  .digraph-statusbar {
+    grid-area: statusbar;
+    background-color: #d3d3d3;
+
+    ul, li {
+      display: inline;
+
+      &:not(:first-child) {
+        padding-left: 1rem;
+      }
+    }
+  }
+
+  .digraph-network {
+    grid-area: digraph;
+    height: @content-height;
+  }
+
+  .digraph-listview {
+    grid-area: listview;
+    height: @content-height;
+    border-left: solid #d3d3d3 0.3rem;
+
+    label.filter {
+      width: 100%;
+      height: @search-height;
+      margin: 0;
+    }
+
+    .itemlist {
+      overflow: auto;
+      height: @listview-height;
+      border-top: solid lightgrey 0.3rem;
+      padding: 0;
+      list-style-type: none;
+    }
+  }
+}

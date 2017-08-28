@@ -4,21 +4,23 @@ const path = require('path'),
   webpack = require('webpack'),
   HtmlWebpackPlugin = require('html-webpack-plugin');
 
+const ENV = process.env.NODE_ENV = process.env.ENV = 'development';
+
 module.exports = {
 
   watch: true,
 
   entry: {
-    app: './app/main.ts'
+    app: './app/index.tsx'
   },
 
-/*
-  entry: [
-    'webpack-dev-server/client?http://localhost:9090',
-    'webpack/hot/only-dev-server',
-    './app/main.ts'
-  ],
-*/
+  /*
+    entry: [
+      'webpack-dev-server/client?http://localhost:9090',
+      'webpack/hot/only-dev-server',
+      './app/index.tsx'
+    ],
+  */
 
   output: {
     filename: '[name].js',
@@ -37,6 +39,19 @@ module.exports = {
         enforce: 'pre',
         test: /\.tsx?$/,
         use: 'source-map-loader'
+      },
+      {
+        test: /\.(jpg|png|gif)$/,
+        use: 'file-loader'
+      },
+      {
+        test: /\.(woff|woff2|eot|ttf|svg)$/,
+        use: {
+          loader: 'url-loader',
+          options: {
+            limit: 100000
+          }
+        }
       },
       {
         test: /\.css$/,
@@ -73,35 +88,13 @@ module.exports = {
         ]
       },
       {
-        test: /\.(jpg|png|gif)$/,
-        use: 'file-loader'
-      },
-      {
-        test: /\.(woff|woff2|eot|ttf|svg)$/,
-        use: {
-          loader: 'url-loader',
-          options: {
-            limit: 100000
-          }
-        }
+        test: /\.html$/,
+        loader: 'html-loader'
       },
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
         exclude: /node_modules/
-      },
-      {
-        test: /\.html$/,
-        loader: 'html-loader'
-      },
-      {
-        rules: [
-          {
-            test: /sigma.*\.js?$/,
-            //exclude: ['.'],
-            use: ['script-loader']
-          }
-        ]
       }
     ]
   },
@@ -142,19 +135,12 @@ module.exports = {
         htmlLoader: {
           minimize: true,
           removeAttributeQuotes: false,
-          caseSensitive: true,
-          customAttrSurround: [
-            [/#/, /(?:)/],
-            [/\*/, /(?:)/],
-            [/\[?\(?/, /(?:)/]
-          ],
-          customAttrAssign: [/\)?]?=/]
+          caseSensitive: true
         }
       }
     }),
     new webpack.DefinePlugin({
-      // Any occurrence of process.env.NODE_ENV in the imported code is replaced with "development"
-      'process.env.NODE_ENV': JSON.stringify('development'),
+      'process.env.NODE_ENV': JSON.stringify(ENV),
       IS_PROD: false
     }),
     new webpack.HotModuleReplacementPlugin(),

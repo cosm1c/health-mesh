@@ -30,7 +30,7 @@ object AgentPoolRestService {
 @Path("/agents")
 class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materializer) extends Directives with ExampleAgent.JsonSupport {
 
-    private implicit val timeout = Timeout(1.second)
+    private implicit val timeout: Timeout = Timeout(1.second)
 
     val route: Route =
         pathPrefix("agents") {
@@ -54,8 +54,8 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
 
     @ApiOperation(value = "Create or Update an Agent with supplied config", httpMethod = "PUT", response = classOf[ExampleConfig])
     @ApiImplicitParams(Array(
-        new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataType = "string", paramType = "path"),
-        new ApiImplicitParam(name = "agentConfig", value = "Agent config", required = true, dataType = "prowse.github.cosm1c.healthmesh.agentpool.AgentActor.AgentConfig", paramType = "body")
+        new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataTypeClass = classOf[String], paramType = "path"),
+        new ApiImplicitParam(name = "agentConfig", value = "Agent config", required = true, dataTypeClass = classOf[ExampleConfig], paramType = "body")
     ))
     @Path("/{agentId}")
     def putAgentConfig: Route =
@@ -75,7 +75,7 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
 
     @ApiOperation(value = "Fetch Agent config", httpMethod = "GET", response = classOf[ExampleConfig])
     @ApiImplicitParams(Array(
-        new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataType = "string", paramType = "path")
+        new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataTypeClass = classOf[String], paramType = "path")
     ))
     @Path("/{agentId}")
     def getAgentConfig: Route =
@@ -95,7 +95,7 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
 
     @ApiOperation(value = "Delete Agent", httpMethod = "DELETE", response = classOf[ExampleConfig])
     @ApiImplicitParams(Array(
-        new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataType = "string", paramType = "path")
+        new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataTypeClass = classOf[String], paramType = "path")
     ))
     @Path("/{agentId}")
     def delAgent: Route =
@@ -113,7 +113,7 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
 
     @ApiOperation(value = "Delete Agent", httpMethod = "POST")
     @ApiImplicitParams(Array(
-        new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataType = "string", paramType = "path"),
+        new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataTypeClass = classOf[String], paramType = "path"),
         new ApiImplicitParam(name = "message", value = "Message to send to actor", paramType = "body")
     ))
     @Path("/{agentId}")

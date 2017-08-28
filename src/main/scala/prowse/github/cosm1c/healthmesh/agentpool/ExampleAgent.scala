@@ -13,6 +13,7 @@ import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent._
 import prowse.github.cosm1c.healthmesh.membership.MembershipFlow.{MemberId, MembershipCommand, MembershipDelta}
 import spray.json._
 
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 import scala.util.{Failure, Success}
 
@@ -23,7 +24,7 @@ object ExampleAgent {
 
     type ExampleAgentId = String
 
-    final case class ExampleConfig(id: ExampleAgentId, label: String, depends: Seq[String], cssHexColors: Seq[String], flashMillis: Long)
+    final case class ExampleConfig(id: ExampleAgentId, label: String, depends: Seq[ExampleAgentId], cssHexColors: Seq[String], flashMillis: Long)
 
     final case class ExampleRequestPayload(cssHexColors: Seq[String], flashMillis: Long)
 
@@ -49,7 +50,7 @@ object ExampleAgent {
     }
 
     final case class ExampleAgentUpdate(label: String,
-                                        depends: Seq[String],
+                                        depends: Seq[MemberId],
                                         cssHexColor: String)
 
     trait JsonSupport extends SprayJsonSupport with DefaultJsonProtocol {
@@ -58,6 +59,25 @@ object ExampleAgent {
         implicit val exampleResponseFormat: RootJsonFormat[ExampleResponsePayload] = jsonFormat1(ExampleResponsePayload)
         implicit val exampleAgentUpdateFormat: RootJsonFormat[ExampleAgentUpdate] = jsonFormat3(ExampleAgentUpdate)
         implicit val membershipDeltaFormat: RootJsonFormat[MembershipDelta[ExampleAgentUpdate]] = jsonFormat4(MembershipDelta[ExampleAgentUpdate])
+
+        // Map keys must be strings to be valid JSON
+        implicit def intMapFormat[V: JsonFormat]: RootJsonFormat[Map[Int, V]] =
+            new RootJsonFormat[Map[Int, V]] {
+                override def write(m: Map[Int, V]): JsObject = JsObject {
+                    m.map { field =>
+                        field._1.toString -> field._2.toJson
+                    }
+                }
+
+                def read(value: JsValue): Map[Int, V] = value match {
+                    case x: JsObject => x.fields.map { field =>
+                        (JsString(field._1).convertTo[Int], field._2.convertTo[V])
+                    }(collection.breakOut)
+                    case x => deserializationError("Expected Map as JsObject, but got " + x)
+                }
+
+            }
+
         implicit val exampleAgentWebsocketPayloadFormat: RootJsonFormat[ExampleAgentWebsocketPayload] = jsonFormat3(ExampleAgentWebsocketPayload)
     }
 
@@ -67,7 +87,7 @@ object ExampleAgent {
 
 class ExampleAgent(private var config: ExampleConfig, out: Sink[MembershipCommand[ExampleAgentUpdate], NotUsed])(implicit clock: Clock, materializer: Materializer) extends Actor with ActorLogging {
 
-    private implicit val executionContext = context.dispatcher
+    private implicit val executionContext: ExecutionContextExecutor = context.dispatcher
     private val outQueue = Source.queue(0, OverflowStrategy.backpressure).toMat(out)(Keep.left).run()
 
     private var cssHexColors = flashableColors(config.cssHexColors)

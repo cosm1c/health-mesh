@@ -16,10 +16,10 @@
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-        <scala.version>2.12.2</scala.version>
+        <scala.version>2.12.3</scala.version>
         <scala.compat.version>2.12</scala.compat.version>
-        <akka.version>2.5.2</akka.version>
-        <akka-http.version>10.0.7</akka-http.version>
+        <akka.version>2.5.4</akka.version>
+        <akka-http.version>10.0.9</akka-http.version>
 
         <app.main.class>prowse.github.cosm1c.healthmesh.Main</app.main.class>
     </properties>
@@ -31,6 +31,11 @@
             <version>${scala.version}</version>
         </dependency>
 
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-stream_${scala.compat.version}</artifactId>
+            <version>${akka.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-http-core_${scala.compat.version}</artifactId>
@@ -52,30 +57,26 @@
             <version>${akka.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.github.swagger-akka-http</groupId>
+            <artifactId>swagger-akka-http_${scala.compat.version}</artifactId>
+            <version>0.10.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.typesafe.scala-logging</groupId>
             <artifactId>scala-logging_${scala.compat.version}</artifactId>
-            <version>3.5.0</version>
+            <version>3.7.2</version>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.1.8</version>
+            <version>1.2.3</version>
             <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
-            <version>1.7.22</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.swagger-akka-http</groupId>
-            <artifactId>swagger-akka-http_${scala.compat.version}</artifactId>
-            <version>0.9.1</version>
-        </dependency>
-        <dependency>
-            <groupId>ch.megard</groupId>
-            <artifactId>akka-http-cors_${scala.compat.version}</artifactId>
-            <version>0.1.11</version>
+            <version>1.7.25</version>
         </dependency>
 
         <!-- Test -->

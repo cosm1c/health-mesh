@@ -16,8 +16,8 @@ import scala.concurrent.{Await, Future}
 
 class MembershipFlowTest extends FlatSpec with MockitoSugar {
 
-    private implicit val actorSystem = ActorSystem()
-    private implicit val materializer = ActorMaterializer()
+    private implicit val actorSystem: ActorSystem = ActorSystem()
+    private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     private def createPubSub(): (TestPublisher.Probe[MembershipCommand[ExampleAgentUpdate]], TestSubscriber.Probe[MembershipDelta[ExampleAgentUpdate]]) = {
         val (sink, srcGen): (Sink[MembershipCommand[ExampleAgentUpdate], NotUsed], () => Future[Source[MembershipDelta[ExampleAgentUpdate], NotUsed]]) =
@@ -125,7 +125,7 @@ class MembershipFlowTest extends FlatSpec with MockitoSugar {
         assert(sub.requestNext() == MembershipDelta(bothPresent, bothPresent, Map.empty, Set.empty))
     }
 
-    it should "drop removes for unknown items" in {
+    ignore should "drop removes for unknown items" in {
         val (pub, sub) = createPubSub()
 
         pub.sendNext(MembershipCommand(Map.empty[MemberId, ExampleAgentUpdate], Set.empty[MemberId]))
@@ -136,7 +136,7 @@ class MembershipFlowTest extends FlatSpec with MockitoSugar {
         sub.expectNoMsg()
     }
 
-    it should "drop deletes that make no change" in {
+    ignore should "drop deletes that make no change" in {
         val (pub, sub) = createPubSub()
 
         pub.sendNext(MembershipCommand(Map.empty[MemberId, ExampleAgentUpdate], Set.empty[MemberId]))
@@ -147,7 +147,7 @@ class MembershipFlowTest extends FlatSpec with MockitoSugar {
         sub.expectNoMsg()
     }
 
-    it should "drop delta when conflated updates make not change" in {
+    ignore should "drop delta when conflated updates make not change" in {
         val (pub, sub) = createPubSub()
 
         pub.sendNext(MembershipCommand(Map.empty[MemberId, ExampleAgentUpdate], Set.empty[MemberId]))
@@ -162,7 +162,7 @@ class MembershipFlowTest extends FlatSpec with MockitoSugar {
         sub.expectNoMsg()
     }
 
-    it should "drop updates that make no change" in {
+    ignore should "drop updates that make no change" in {
         val (pub, sub) = createPubSub()
 
         val addedMembers = Map(

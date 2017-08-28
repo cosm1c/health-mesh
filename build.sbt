@@ -1,7 +1,10 @@
 import sbt.Keys._
 
-val akkaVersion = "2.5.2"
-val akkaHttpVersion = "10.0.7"
+import scala.language.postfixOps
+import scala.sys.process._
+
+val akkaVersion = "2.5.4"
+val akkaHttpVersion = "10.0.9"
 
 lazy val root = (project in file("."))
   .enablePlugins(BuildInfoPlugin)
@@ -13,7 +16,7 @@ lazy val root = (project in file("."))
 
     version := "1.0",
 
-    scalaVersion := "2.12.2",
+    scalaVersion := "2.12.3",
 
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-stream" % akkaVersion,
@@ -21,12 +24,11 @@ lazy val root = (project in file("."))
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-      "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.9.1",
-      "ch.megard" %% "akka-http-cors" % "0.1.11",
+      "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.10.0",
 
-      "com.typesafe.scala-logging" %% "scala-logging" % "3.5.0",
-      "ch.qos.logback" % "logback-classic" % "1.1.8" % Runtime,
-      "org.slf4j" % "jul-to-slf4j" % "1.7.22",
+      "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2",
+      "ch.qos.logback" % "logback-classic" % "1.2.3" % Runtime,
+      "org.slf4j" % "jul-to-slf4j" % "1.7.25",
 
       "com.typesafe.akka" %% "akka-testkit" % akkaVersion % Test,
       "com.typesafe.akka" %% "akka-stream-testkit" % akkaVersion % Test,
@@ -72,9 +74,8 @@ lazy val root = (project in file("."))
       BuildInfoKey.action("buildInstant") {
         java.time.format.DateTimeFormatter.ISO_INSTANT.format(java.time.Instant.now())
       },
-      BuildInfoKey.action("gitChecksum") {
-        // git describe would be better but requires annotations exist
-        Process("git rev-parse HEAD").lines.head
+      "gitChecksum" -> {
+        git.gitHeadCommit
       })
   )
 
@@ -82,7 +83,7 @@ lazy val buildJs = taskKey[Unit]("Build JavaScript frontend")
 
 buildJs := {
   println("Building JavaScript frontend...")
-  "cd ui" #&& "npm update" #&& "npm run package" !
+  Process("npm run ci-package", baseDirectory.value / "ui") !
 }
 
 assembly := (assembly dependsOn buildJs).value

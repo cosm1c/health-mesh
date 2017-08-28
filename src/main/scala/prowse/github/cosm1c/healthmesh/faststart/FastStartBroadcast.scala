@@ -9,13 +9,13 @@ import akka.stream.scaladsl.{BroadcastHub, Flow, Keep, Sink, Source}
 import akka.util.Timeout
 import prowse.github.cosm1c.healthmesh.faststart.FastStartBroadcast._
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.util.{Failure, Success}
 
 object FastStartBroadcast {
 
-    private implicit val timeout = Timeout(1.second)
+    private implicit val timeout: Timeout = Timeout(1.second)
 
     def dataSinkAndDataSourceGenerator[In, Out](pure: In => Out, updateState: (In, Out) => Out, conflate: (Out, Out) => Out)(implicit actorRefFactory: ActorRefFactory, materializer: Materializer): (Sink[In, NotUsed], () => Future[Source[Out, NotUsed]]) = {
         val actor = actorRefFactory.actorOf(FastStartBroadcast.props[In, Out](pure, updateState, conflate))
@@ -44,7 +44,7 @@ object FastStartBroadcast {
 // TODO: review supervision strategies
 class FastStartBroadcast[In, Out](pure: In => Out, updateState: (In, Out) => Out, conflate: (Out, Out) => Out)(implicit materializer: Materializer) extends Actor with ActorLogging {
 
-    private implicit val executionContextExecutor = context.dispatcher
+    private implicit val executionContextExecutor: ExecutionContextExecutor = context.dispatcher
 
     private var index: Long = 0L
     private var lastElement: (Long, Out) = _
@@ -98,7 +98,7 @@ class FastStartBroadcast[In, Out](pure: In => Out, updateState: (In, Out) => Out
         case OnCompleteMessage => context.stop(self)
     }
 
-    private def pushData() = {
+    private def pushData(): Unit = {
         val origSender = sender()
         dataQueue.offer(lastElement)
             .onComplete({
@@ -116,9 +116,9 @@ class FastStartBroadcast[In, Out](pure: In => Out, updateState: (In, Out) => Out
             })
     }
 
-    private def completeStage() = context.stop(self)
+    private def completeStage(): Unit = context.stop(self)
 
-    private def failStage(cause: Throwable) = {
+    private def failStage(cause: Throwable): Unit = {
         log.error(cause, "FastStartBroadcastActor Failed")
         context.stop(self)
     }

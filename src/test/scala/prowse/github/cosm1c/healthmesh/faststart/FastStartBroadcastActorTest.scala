@@ -16,7 +16,7 @@ import scala.concurrent.{Await, Future}
 
 class FastStartBroadcastActorTest extends TestKit(ActorSystem("MySpec")) with FlatSpecLike with BeforeAndAfterAll with MockitoSugar {
 
-    private implicit val materializer = ActorMaterializer()
+    private implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     override def afterAll: Unit = {
         TestKit.shutdownActorSystem(system)

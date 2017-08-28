@@ -1,15 +1,15 @@
-export interface NodeInfo {
-  label: string;
-  depends: Array<String>;
-  cssHexColor: string;
+export interface NodeState {
+  readonly label: string;
+  readonly depends: Array<string>;
+  readonly cssHexColor: string;
 }
 
-export interface DeltaItem {
-  [id: string]: NodeInfo;
+export interface NodeCollectionJson {
+  [id: string]: NodeState;
 }
 
-export interface Delta {
-  added: DeltaItem;
-  updated: DeltaItem;
-  removed: Array<string>;
+export interface NodeDeltasJson {
+  readonly added: NodeCollectionJson;
+  readonly updated: NodeCollectionJson;
+  readonly removed: Array<string>;
 }
