@@ -1,5 +1,6 @@
 import * as React from 'react';
-import {NodeState} from '../NodeInfo';
+import {colorForHealth} from '../NodeInfo';
+import {NodeInfoRecord} from '../immutable/NodeInfoRecord';
 
 export interface NodeCardOwnProps {
   className?: string;
@@ -7,18 +8,21 @@ export interface NodeCardOwnProps {
 }
 
 export interface NodeCardProps {
-  id: string;
-  nodeState: NodeState;
+  nodeInfoRecord: NodeInfoRecord;
   isSelected?: boolean;
+  recentlyUpdate?: boolean;
 }
 
 export const NodeCard: React.StatelessComponent<NodeCardOwnProps & NodeCardProps> = (props) => {
-  const {nodeState, isSelected, className, style} = props;
+  const {nodeInfoRecord, isSelected, className, style} = props;
+  const {color, backgroundColor, borderColor} = colorForHealth(nodeInfoRecord.healthStatus);
+  // TODO: flash card when recentlyUpdated=true
   const nodeStyle = {
     ...style,
-    color: isSelected ? nodeState.cssHexColor : 'white',
-    backgroundColor: isSelected ? 'white' : nodeState.cssHexColor,
+    color: color,
+    backgroundColor: isSelected ? 'white' : backgroundColor,
+    borderColor: borderColor,
   };
 
-  return (<div className={className} style={nodeStyle}>{nodeState.label}</div>);
+  return (<div className={className} style={nodeStyle}>{nodeInfoRecord.label}</div>);
 };

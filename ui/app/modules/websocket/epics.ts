@@ -12,10 +12,11 @@ import 'rxjs/add/operator/takeUntil';
 import {combineEpics, Epic} from 'redux-observable';
 import {actionCreators, CONNECT_WEBSOCKET, DISCONNECT_WEBSOCKET} from './';
 import {IRootAction, IRootStateRecord} from '../../modules';
-import {NodeDeltasJson} from '../../NodeInfo';
+import {NodeDeltasJson, UserCountJson} from '../../NodeInfo';
 import store from '../../store';
 import {WebSocketAction} from './actions';
 import {epic$} from '../root-epic';
+import "rxjs/add/operator/filter";
 
 // Used by DefinePlugin
 declare const IS_PROD: string;
@@ -45,21 +46,32 @@ function calcWsUrl(): Promise<string> {
       xhr.responseType = 'json';
       xhr.onload = () => {
         const status = xhr.status;
-        if (status === 200) {
-          console.info('Using wsUrl:', xhr.response.wsUrl);
-          resolve(xhr.response.wsUrl);
+        const wsUrl = (typeof xhr.response === 'string') ? JSON.parse(xhr.response).wsUrl : xhr.response.wsUrl;
+        if (status === 200 && wsUrl) {
+          console.info('Using wsUrl:', wsUrl);
+          resolve(wsUrl);
         } else {
-          reject(`Failed to fetch wsUrl from ${fetchWsURl} - http response status ${status}`);
+          const err = `Failed to fetch wsUrl from ${fetchWsURl} - http response status ${status}`;
+          reject(err);
+          console.error(err, xhr.response);
         }
       };
       xhr.send();
     } catch (e) {
-      reject(`Failed to fetch wsUrl from ${fetchWsURl} - error: ${e}`);
+      const err = `Failed to fetch wsUrl from ${fetchWsURl} - error: ${e}`;
+      console.log(err, e);
+      reject(err);
     }
   });
 }
 
-const eventualSocket: Promise<WebSocketSubject<NodeDeltasJson>> =
+type WebSocketPayloadType = NodeDeltasJson | UserCountJson;
+
+function isDelta(payload: WebSocketPayloadType): payload is NodeDeltasJson {
+  return (<NodeDeltasJson>payload).added !== undefined;
+}
+
+const eventualSocket: Promise<WebSocketSubject<WebSocketPayloadType>> =
   calcWsUrl()
     .then(wsUrl => {
       console.info('Using WebSocket URL', wsUrl);
@@ -84,7 +96,7 @@ const eventualSocket: Promise<WebSocketSubject<NodeDeltasJson>> =
       };
 
       // TODO: for testing use store dependencies to inject websocket creator
-      return WebSocketSubject.create(webSocketSubjectConfig) as WebSocketSubject<NodeDeltasJson>;
+      return WebSocketSubject.create(webSocketSubjectConfig) as WebSocketSubject<WebSocketPayloadType>;
     });
 
 // add epic asynchronously
@@ -102,10 +114,14 @@ eventualSocket.then(socket => {
             return Observable.fromEvent(window, 'online')
               .take(1);
           }))
-          .takeUntil(
-            action$.ofType(DISCONNECT_WEBSOCKET)
-          )
-          .map(actionCreators.websocketPayload)
+          .takeUntil(action$.ofType(DISCONNECT_WEBSOCKET))
+          .map(payload => {
+            if (isDelta(payload)) {
+              return actionCreators.deltaPayload(payload);
+            }
+            return actionCreators.userCountPayload(payload.userCount);
+          })
+          .filter(i => i !== null)
           .map(action => {
             webSocketActionSubject.next(action);
             return action;

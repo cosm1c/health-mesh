@@ -8,7 +8,7 @@ import akka.stream.testkit.scaladsl.{TestSink, TestSource}
 import akka.stream.testkit.{TestPublisher, TestSubscriber}
 import org.scalatest.FlatSpec
 import org.scalatest.mockito.MockitoSugar
-import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent.ExampleAgentUpdate
+import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent.{ExampleAgentUpdate, HealthStatus}
 import prowse.github.cosm1c.healthmesh.membership.MembershipFlow.{MemberId, MembershipCommand, MembershipDelta}
 
 import scala.concurrent.duration._
@@ -51,7 +51,7 @@ class MembershipFlowTest extends FlatSpec with MockitoSugar {
     it should "add an item" in {
         val (pub, sub) = createPubSub()
 
-        val addedMembers = Map("a" -> ExampleAgentUpdate("a", Seq(), "A"))
+        val addedMembers = Map("a" -> ExampleAgentUpdate("a", Seq(), HealthStatus.Unknown))
         pub.sendNext(MembershipCommand(addedMembers))
 
         assert(sub.requestNext() == MembershipDelta(addedMembers, addedMembers, Map.empty, Set.empty))
@@ -63,8 +63,8 @@ class MembershipFlowTest extends FlatSpec with MockitoSugar {
         val (pub, sub) = createPubSub()
 
         val addedMembers = Map(
-            "a" -> ExampleAgentUpdate("a", Seq(), "A"),
-            "b" -> ExampleAgentUpdate("b", Seq(), "B")
+            "a" -> ExampleAgentUpdate("a", Seq(), HealthStatus.Unknown),
+            "b" -> ExampleAgentUpdate("b", Seq(), HealthStatus.Unhealthy)
         )
         pub.sendNext(MembershipCommand(addedMembers, Set.empty))
 
@@ -74,11 +74,11 @@ class MembershipFlowTest extends FlatSpec with MockitoSugar {
     it should "add two items" in {
         val (pub, sub) = createPubSub()
 
-        val addedMembers1st = Map("a" -> ExampleAgentUpdate("a", Seq(), "A"))
+        val addedMembers1st = Map("a" -> ExampleAgentUpdate("a", Seq(), HealthStatus.Unknown))
         pub.sendNext(MembershipCommand(addedMembers1st, Set.empty))
         assert(sub.requestNext() == MembershipDelta(addedMembers1st, addedMembers1st, Map.empty, Set.empty))
 
-        val addedMembers2nd = Map("b" -> ExampleAgentUpdate("b", Seq(), "B"))
+        val addedMembers2nd = Map("b" -> ExampleAgentUpdate("b", Seq(), HealthStatus.Unhealthy))
         pub.sendNext(MembershipCommand(addedMembers2nd, Set.empty))
 
         val allMembers = addedMembers1st ++ addedMembers2nd
@@ -88,11 +88,11 @@ class MembershipFlowTest extends FlatSpec with MockitoSugar {
     it should "update an item" in {
         val (pub, sub) = createPubSub()
 
-        val addedMembers1st = Map("a" -> ExampleAgentUpdate("a", Seq(), "A"))
+        val addedMembers1st = Map("a" -> ExampleAgentUpdate("a", Seq(), HealthStatus.Unknown))
         pub.sendNext(MembershipCommand(addedMembers1st, Set.empty))
         assert(sub.requestNext() == MembershipDelta(addedMembers1st, addedMembers1st, Map.empty, Set.empty))
 
-        val addedMembers2nd = Map("a" -> ExampleAgentUpdate("a", Seq(), "AAA"))
+        val addedMembers2nd = Map("a" -> ExampleAgentUpdate("a", Seq(), HealthStatus.Healthy))
         pub.sendNext(MembershipCommand(addedMembers2nd, Set.empty))
         assert(sub.requestNext() == MembershipDelta(addedMembers2nd, Map.empty, addedMembers2nd, Set.empty))
     }
@@ -101,22 +101,22 @@ class MembershipFlowTest extends FlatSpec with MockitoSugar {
         val (pub, sub) = createPubSub()
 
         val addedMembers1st = Map(
-            "a" -> ExampleAgentUpdate("a", Seq(), "A"),
-            "b" -> ExampleAgentUpdate("b", Seq(), "B")
+            "a" -> ExampleAgentUpdate("a", Seq(), HealthStatus.Unknown),
+            "b" -> ExampleAgentUpdate("b", Seq(), HealthStatus.Unhealthy)
         )
         pub.sendNext(MembershipCommand(addedMembers1st, Set.empty))
         assert(sub.requestNext() == MembershipDelta(addedMembers1st, addedMembers1st, Map.empty, Set.empty))
 
         val removedMembers2nd = Set("a")
         pub.sendNext(MembershipCommand(Map.empty, removedMembers2nd))
-        assert(sub.requestNext() == MembershipDelta(Map("b" -> ExampleAgentUpdate("b", Seq(), "B")), Map.empty, Map.empty, removedMembers2nd))
+        assert(sub.requestNext() == MembershipDelta(Map("b" -> ExampleAgentUpdate("b", Seq(), HealthStatus.Unhealthy)), Map.empty, Map.empty, removedMembers2nd))
     }
 
     it should "conflate updates" in {
         val (pub, sub) = createPubSub()
 
-        val aPresent = Map("a" -> ExampleAgentUpdate("a", Seq(), "A"))
-        val bothPresent = Map("a" -> ExampleAgentUpdate("a", Seq(), "A"), "b" -> ExampleAgentUpdate("b", Seq(), "B"))
+        val aPresent = Map("a" -> ExampleAgentUpdate("a", Seq(), HealthStatus.Unknown))
+        val bothPresent = Map("a" -> ExampleAgentUpdate("a", Seq(), HealthStatus.Unknown), "b" -> ExampleAgentUpdate("b", Seq(), HealthStatus.Unhealthy))
         val setOfA = Set("A")
 
         pub.sendNext(MembershipCommand(bothPresent, Set.empty))
@@ -154,8 +154,8 @@ class MembershipFlowTest extends FlatSpec with MockitoSugar {
         assert(sub.requestNext() == MembershipDelta(Map.empty, Map.empty, Map.empty, Set.empty))
 
         pub.sendNext(MembershipCommand(Map(
-            "a" -> ExampleAgentUpdate("a", Seq(), "A"),
-            "b" -> ExampleAgentUpdate("b", Seq(), "B")), Set.empty))
+            "a" -> ExampleAgentUpdate("a", Seq(), HealthStatus.Unknown),
+            "b" -> ExampleAgentUpdate("b", Seq(), HealthStatus.Unhealthy)), Set.empty))
         pub.sendNext(MembershipCommand(Map.empty, Set("A")))
         pub.sendNext(MembershipCommand(Map.empty, Set("B")))
         sub.request(1L)
@@ -166,12 +166,12 @@ class MembershipFlowTest extends FlatSpec with MockitoSugar {
         val (pub, sub) = createPubSub()
 
         val addedMembers = Map(
-            "a" -> ExampleAgentUpdate("a", Seq(), "A"),
-            "b" -> ExampleAgentUpdate("b", Seq(), "B"))
+            "a" -> ExampleAgentUpdate("a", Seq(), HealthStatus.Unknown),
+            "b" -> ExampleAgentUpdate("b", Seq(), HealthStatus.Unhealthy))
         pub.sendNext(MembershipCommand(addedMembers, Set.empty))
         assert(sub.requestNext() == MembershipDelta(addedMembers, addedMembers, Map.empty, Set.empty))
 
-        pub.sendNext(MembershipCommand(Map("a" -> ExampleAgentUpdate("a", Seq(), "A")), Set.empty))
+        pub.sendNext(MembershipCommand(Map("a" -> ExampleAgentUpdate("a", Seq(), HealthStatus.Unknown)), Set.empty))
         sub.request(1L)
         sub.expectNoMsg()
     }

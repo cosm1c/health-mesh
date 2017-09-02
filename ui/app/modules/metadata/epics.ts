@@ -1,36 +1,49 @@
 import {combineEpics, Epic} from 'redux-observable';
-import {List} from 'immutable';
+import * as Immutable from 'immutable';
 import {getMetadataIndex} from './selectors';
 import 'rxjs/add/observable/of';
 import 'rxjs/add/operator/zip';
 import {IRootAction, IRootStateRecord} from '../';
 import {actionCreators} from './actions';
-import {NodeInfoFactory, NodeInfoMap} from '../../immutable';
-import {WEBSOCKET_PAYLOAD, WebSocketActions} from '../websocket/actions';
+import {NodeInfoRecordFactory, NodeInfoRecordMap} from '../../immutable';
+import {DELTA_PAYLOAD, USER_COUNT_PAYLOAD, WebSocketActions} from '../websocket/actions';
 import {NodeCollectionJson, NodeDeltasJson} from '../../NodeInfo';
 
-function upsertAll(collection: NodeCollectionJson, mutable: NodeInfoMap) {
+function upsertAll(collection: NodeCollectionJson, mutable: NodeInfoRecordMap) {
+  const now = Date.now();
   for (let key in collection) {
     const updateDelta = collection[key];
     const nodeInfoRecord = mutable.get(key);
 
     if (nodeInfoRecord) {
-      mutable.set(key, nodeInfoRecord.mergeDeep(updateDelta));
+      mutable.set(key,
+        nodeInfoRecord
+          .mergeDeep(updateDelta)
+          .set('lastUpdatedInstant', now)
+      );
 
     } else {
-      mutable.set(key, NodeInfoFactory({
-        ...updateDelta,
-        depends: List(updateDelta.depends)
-      }));
+      mutable.set(key,
+        NodeInfoRecordFactory({
+          ...updateDelta,
+          id: key,
+          lastUpdatedInstant: now,
+          label: updateDelta.label,
+          depends: Immutable.List(updateDelta.depends),
+          healthStatus: updateDelta.healthStatus,
+          lastPollInstant: updateDelta.lastPollInstant,
+          lastPollResult: updateDelta.lastPollResult,
+          lastPollDurationMillis: updateDelta.lastPollDurationMillis,
+        }));
     }
   }
 }
 
-function deleteAll(keys: Array<string>, mutatedIndex: NodeInfoMap) {
-  keys.forEach((key) => mutatedIndex.remove(key));
+function deleteAll(keys: Array<string>, mutable: NodeInfoRecordMap) {
+  keys.forEach((key) => mutable.remove(key));
 }
 
-function applyMutations(deltasJson: NodeDeltasJson, index: NodeInfoMap): NodeInfoMap {
+function applyMutations(deltasJson: NodeDeltasJson, index: NodeInfoRecordMap): NodeInfoRecordMap {
   return index.withMutations(mutable => {
     deleteAll(deltasJson.removed, mutable);
     upsertAll(deltasJson.updated, mutable);
@@ -38,12 +51,22 @@ function applyMutations(deltasJson: NodeDeltasJson, index: NodeInfoMap): NodeInf
   });
 }
 
-const payloadReceivedEpic: Epic<IRootAction, IRootStateRecord> = (action$, store) => {
+const deltaReceivedEpic: Epic<IRootAction, IRootStateRecord> = (action$, store) => {
   return action$
-    .ofType(WEBSOCKET_PAYLOAD)
-    .map((payloadAction: WebSocketActions[typeof WEBSOCKET_PAYLOAD]) => payloadAction.payload)
+    .ofType(DELTA_PAYLOAD)
+    .map((payloadAction: WebSocketActions[typeof DELTA_PAYLOAD]) => payloadAction.payload)
     .map(delta => applyMutations(delta, getMetadataIndex(store.getState())))
     .map(actionCreators.indexUpdated);
 };
 
-export const epics = combineEpics(payloadReceivedEpic);
+const userCountReceivedEpic: Epic<IRootAction, IRootStateRecord> = (action$) => {
+  return action$
+    .ofType(USER_COUNT_PAYLOAD)
+    .map((payloadAction: WebSocketActions[typeof USER_COUNT_PAYLOAD]) => payloadAction.count)
+    .map(actionCreators.userCountUpdated);
+};
+
+export const epics = combineEpics(
+  deltaReceivedEpic,
+  userCountReceivedEpic,
+);

@@ -25,7 +25,7 @@ export const websocketReducer: Reducer<IWebSocketStateRecord> =
       case WEBSOCKET_DISCONNECTED:
         return state.setIn(['socketState'], WebSocketStateEnum.DISCONNECTED);
 
-      // case WEBSOCKET_PAYLOAD:
+      // case DELTA_PAYLOAD:
       //   return state.setIn(['socketState'], WebSocketStateEnum.CONNECTED);
 
       default:

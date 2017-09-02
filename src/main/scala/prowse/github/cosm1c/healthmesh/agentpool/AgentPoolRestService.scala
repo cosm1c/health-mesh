@@ -114,7 +114,7 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
     @ApiOperation(value = "Delete Agent", httpMethod = "POST")
     @ApiImplicitParams(Array(
         new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataTypeClass = classOf[String], paramType = "path"),
-        new ApiImplicitParam(name = "message", value = "Message to send to actor", paramType = "body")
+        new ApiImplicitParam(name = "message", value = "Message to send to actor", paramType = "body", dataTypeClass = classOf[ExampleRequestPayload])
     ))
     @Path("/{agentId}")
     def postAgentMessage: Route =

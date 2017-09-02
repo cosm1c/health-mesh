@@ -22,7 +22,7 @@ object AgentPoolActor extends SprayJsonSupport {
 
     final case object ListAgents
 
-    final case class BatchAgentUpdates(updates: Seq[UpdateAgentConfig])
+    final case class BatchAgentUpdates(updates: Seq[UpdateAgentConfig], removes: Set[ExampleAgentId])
 
     final case class UpdateAgentConfig(id: ExampleAgentId, config: ExampleConfig)
 
@@ -86,7 +86,8 @@ class AgentPoolActor(agentCreator: ExampleConfig => ActorRef) extends Actor with
                     pool += id -> childAgent
             }
 
-        case BatchAgentUpdates(updates) =>
+        case BatchAgentUpdates(updates, removes) =>
+            pool = pool -- removes
             val eventualUpdateResults = updates.map(update =>
                 pool.get(update.id) match {
                     case Some(actorRef) => (actorRef ? update.config).mapTo[Success[ExampleConfig]]

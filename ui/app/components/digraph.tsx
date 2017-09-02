@@ -1,15 +1,19 @@
 import * as classNames from 'classnames';
 import * as React from 'react';
+import * as Immutable from 'immutable';
 import {connect} from 'react-redux';
 import {DataSet, Edge as GraphEdge, Network, Node as GraphNode} from 'vis';
-import {NodeDeltasJson, NodeState} from '../NodeInfo';
-import {NodeInfoMap, WebSocketStateEnum} from '../immutable';
+import {colorForHealth, NodeDeltasJson} from '../NodeInfo';
+import {NodeInfoRecordMap, WebSocketStateEnum} from '../immutable';
 import {ListView, StatusBar} from './';
 import {IRootStateRecord} from '../modules';
-import {getMetadataIndex} from '../modules/metadata/selectors';
 import {webSocketActionSubject} from '../modules/websocket/epics';
-import {WEBSOCKET_CONNECTED, WEBSOCKET_PAYLOAD, WebSocketAction} from '../modules/websocket/actions';
+import {WEBSOCKET_CONNECTED, DELTA_PAYLOAD, WebSocketAction} from '../modules/websocket/actions';
 import {getWebSocketStateEnum} from '../modules/websocket/selectors';
+import {NodeDetailView} from './node-detail';
+import {getMetadataIndex} from '../modules/root-selectors';
+import {NodeInfoRecord} from '../immutable/NodeInfoRecord';
+import {getUserCount} from '../modules/metadata/selectors';
 
 interface DigraphOwnProps {
   className?: string;
@@ -18,20 +22,28 @@ interface DigraphOwnProps {
 
 interface DigraphProps {
   socketState: WebSocketStateEnum;
-  index: NodeInfoMap;
+  index: NodeInfoRecordMap;
+  userCount: number;
 }
 
 interface DigraphState {
   selection: Array<string>;
+  recentlyUpdated: Immutable.Set<string>;
 }
 
+const flashDuration = 300;
+
 function nodeInfoFor(payload: NodeDeltasJson, updateType: string): Array<GraphNode> {
-  return Object.keys(payload[updateType]).map(id => {
-    const nodeState: NodeState = payload[updateType][id];
+  const updates = payload[updateType];
+  return Object.keys(updates).map(id => {
+    const nodeState: NodeInfoRecord = updates[id];
+    const {backgroundColor, borderColor} = colorForHealth(nodeState.healthStatus);
     return {
       id: id,
       label: nodeState.label,
-      color: nodeState.cssHexColor,
+      color: backgroundColor,
+      border: borderColor,
+      shadow: true,
     };
   });
 }
@@ -41,8 +53,9 @@ function arrayConcat<T>(a: Array<T>, b: Array<T>): Array<T> {
 }
 
 function edgesFor(payload: NodeDeltasJson, updateType: string): Array<GraphEdge> {
-  return Object.keys(payload[updateType]).map(from => {
-    return payload[updateType][from].depends.map((to: string) => {
+  const update = payload[updateType];
+  return Object.keys(update).map(from => {
+    return update[from].depends.map((to: string) => {
       return {
         id: `${from}-${to}`,
         from: from,
@@ -63,9 +76,11 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
   constructor(props: DigraphProps) {
     super(props);
     this.state = {
-      selection: []
+      selection: [],
+      recentlyUpdated: Immutable.Set<string>(),
     };
 
+    this.receiveWebSocketAction = this.receiveWebSocketAction.bind(this);
     webSocketActionSubject.subscribe({next: this.receiveWebSocketAction});
   }
 
@@ -79,6 +94,19 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
       {
         edges: {
           arrows: 'to'
+        },
+        nodes: {
+          shadow: {
+            enabled: false,
+            color: '#0000FF',
+            size: 20,
+            x: 0,
+            y: 0
+          }
+        },
+        interaction: {
+          navigationButtons: true,
+          keyboard: true
         }
       });
     this.network.on('selectNode', this.selectionChanged);
@@ -88,16 +116,17 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
   private selectionChanged = () =>
     this.changeSelection(this.network.getSelectedNodes() as Array<string>);
 
-  private receiveWebSocketAction = (action: WebSocketAction) => {
+  private receiveWebSocketAction(action: WebSocketAction) {
     switch (action.type) {
 
       case WEBSOCKET_CONNECTED:
         this.edges.clear();
         this.nodes.clear();
+        this.setState({recentlyUpdated: this.state.recentlyUpdated.clear()});
         break;
 
-      case WEBSOCKET_PAYLOAD:
-        const removedIdsSet = new Set<string>(action.payload.removed);
+      case DELTA_PAYLOAD:
+        const removedIdsSet: Immutable.Set<string> = Immutable.Set<string>(action.payload.removed);
         this.edges.remove(
           this.edges
             .get({filter: item => removedIdsSet.has(item.from as string) || removedIdsSet.has(item.to as string)})
@@ -107,9 +136,43 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
         this.nodes.update(nodeInfoFor(action.payload, 'updated'));
         this.edges.update(edgesFor(action.payload, 'added'));
         this.edges.update(edgesFor(action.payload, 'updated'));
+
+        const addedAndUpdatedIds: Immutable.Set<string> = Immutable.Set<string>(
+          Object.keys(action.payload.updated).concat(Object.keys(action.payload.added)));
+
+        const newRecentlyUpdated = this.state.recentlyUpdated.withMutations(mutable => {
+          action.payload.removed.forEach(id => mutable.delete(id));
+          addedAndUpdatedIds.forEach(id => mutable.add(id!));
+        });
+        if (newRecentlyUpdated !== this.state.recentlyUpdated) {
+          this.setState({recentlyUpdated: newRecentlyUpdated});
+        }
+
+
+        setTimeout(() => {
+          const oldestFlashInstant = Date.now() - flashDuration;
+          const {index} = this.props;
+          const {recentlyUpdated} = this.state;
+
+          const culledRecent = recentlyUpdated.withMutations(mutable => {
+            addedAndUpdatedIds
+              .filter(id => oldestFlashInstant >= index.get(id!).lastUpdatedInstant)
+              .forEach(id => {
+                mutable.delete(id!);
+                this.nodes.update({
+                  id: id,
+                  shadow: false
+                } as GraphNode);
+              });
+          });
+          if (culledRecent !== recentlyUpdated) {
+            this.setState({recentlyUpdated: culledRecent});
+          }
+
+        }, flashDuration);
         break;
     }
-  };
+  }
 
   private changeSelection = (ids: Array<string>) => {
     this.setState({
@@ -126,19 +189,26 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
   };
 
   render() {
-    const {className, style, index, socketState} = this.props;
+    const {className, style, index, socketState, userCount} = this.props;
     const digraphClass = classNames(className, 'digraph');
 
     return (<div className={digraphClass} style={style}>
       <StatusBar className='digraph-statusbar'
                  nodeCount={this.nodes.length}
                  edgeCount={this.edges.length}
-                 socketState={socketState}/>
+                 socketState={socketState}
+                 userCount={userCount}/>
       <div className='digraph-network' ref={(divEl) => divEl ? this.networkEl = divEl : null}/>
-      <ListView className='digraph-listview'
-                changeSelection={this.changeSelection}
-                selection={this.state.selection}
-                nodeInfoMap={index}/>
+
+      <div className='detail-view'>
+        <NodeDetailView className='digraph-detailview'
+                        selectedNode={this.state.selection.length > 0 ? index.get(this.state.selection[0]) : undefined}/>
+        <ListView className='digraph-listview'
+                  changeSelection={this.changeSelection}
+                  selection={this.state.selection}
+                  recentlyUpdated={this.state.recentlyUpdated}
+                  nodeInfoRecordMap={index}/>
+      </div>
     </div>);
   }
 }
@@ -147,6 +217,7 @@ const mapStateToProps: (state: IRootStateRecord) => DigraphProps =
   (state: IRootStateRecord) => ({
     socketState: getWebSocketStateEnum(state),
     index: getMetadataIndex(state),
+    userCount: getUserCount(state)
   });
 
 export const Digraph = connect<DigraphProps, DigraphState, DigraphOwnProps>(mapStateToProps)(NetworkDigraphComponent);

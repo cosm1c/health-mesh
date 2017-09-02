@@ -75,6 +75,14 @@ export class Home extends React.Component<HomeProps, HomeState> {
               <h2>About</h2>
               <ul>
                 <li>Network graph of nodes with realtime health over WebSocket</li>
+                <li>Scales to thousands of nodes/edges with hundreds updated per second</li>
+                <li>StatusBar displayed above network chart</li>
+                <li>ListView of all nodes with filter on label</li>
+                <li>Detail view of currently selected node</li>
+                <li>WebSocket auto-reconnects when online</li>
+                <li>swagger.json hyperlink (all served with CORS headers)</li>
+                <li>Tech Stack displayed in modal</li>
+                <li>About displayed in modal</li>
               </ul>
             </article>
           </ReactModal>
