@@ -36,11 +36,11 @@ const flashDuration = 300;
 function nodeInfoFor(payload: NodeDeltasJson, updateType: string): Array<GraphNode> {
   const updates = payload[updateType];
   return Object.keys(updates).map(id => {
-    const nodeState: NodeInfoRecord = updates[id];
-    const {backgroundColor, borderColor} = colorForHealth(nodeState.healthStatus);
+    const nodeInfoRecord: NodeInfoRecord = updates[id];
+    const {backgroundColor, borderColor} = colorForHealth(nodeInfoRecord.healthStatus);
     return {
       id: id,
-      label: nodeState.label,
+      label: nodeInfoRecord.label,
       color: backgroundColor,
       border: borderColor,
       shadow: true,
@@ -147,7 +147,6 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
         if (newRecentlyUpdated !== this.state.recentlyUpdated) {
           this.setState({recentlyUpdated: newRecentlyUpdated});
         }
-
 
         setTimeout(() => {
           const oldestFlashInstant = Date.now() - flashDuration;

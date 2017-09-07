@@ -27,6 +27,8 @@ object ExampleAgent {
 
     type ExampleAgentId = String
 
+    final case class UserCount(userCount: Int)
+
     final case class ExampleConfig(id: ExampleAgentId, label: String, depends: Seq[ExampleAgentId], pollMillis: Long)
 
     final case class ExampleRequestPayload(pollMillis: Long)
@@ -71,6 +73,7 @@ object ExampleAgent {
         implicit val exampleResponseFormat: RootJsonFormat[ExampleResponsePayload] = jsonFormat1(ExampleResponsePayload)
         implicit val exampleAgentUpdateFormat: RootJsonFormat[ExampleAgentUpdate] = jsonFormat6(ExampleAgentUpdate)
         implicit val membershipDeltaFormat: RootJsonFormat[MembershipDelta[ExampleAgentUpdate]] = jsonFormat4(MembershipDelta[ExampleAgentUpdate])
+        implicit val userCountFormat: RootJsonFormat[UserCount] = jsonFormat1(UserCount)
 
         implicit object HealthStatusJsonFormat extends RootJsonFormat[HealthStatus.HealthStatusType] {
             def write(obj: HealthStatus.HealthStatusType): JsValue = JsString(obj.toString)

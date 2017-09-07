@@ -7,21 +7,23 @@ import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem}
 import akka.http.scaladsl.Http.ServerBinding
 import akka.http.scaladsl.model._
 import akka.http.scaladsl.model.headers.{`Access-Control-Allow-Credentials`, `Access-Control-Allow-Origin`}
-import akka.http.scaladsl.model.ws.TextMessage
 import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.PathMatchers.RemainingPath
+import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.{Http, HttpsConnectionContext}
 import akka.pattern.ask
-import akka.stream.scaladsl.{Flow, Keep, MergeHub, Sink, Source}
-import akka.stream.{ActorMaterializer, ThrottleMode}
+import akka.stream.ActorMaterializer
+import akka.stream.scaladsl.{Keep, MergeHub, Source}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor.{BatchAgentUpdates, UpdateAgentConfig}
-import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent.{ExampleAgentId, ExampleAgentWebsocketPayload, ExampleConfig, conflateExampleAgentWebsocketPayload}
+import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent._
 import prowse.github.cosm1c.healthmesh.agentpool.{AgentPoolActor, AgentPoolRestService, ExampleAgent}
 import prowse.github.cosm1c.healthmesh.membership.MembershipFlow
 import prowse.github.cosm1c.healthmesh.swagger.SwaggerDocService
+import prowse.github.cosm1c.healthmesh.usercount.CountFlow
+import prowse.github.cosm1c.healthmesh.websocketflow.ClientWebSocketFlow.clientWebSocketFlow
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContextExecutor, Future}
@@ -84,6 +86,8 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
     private val (dataSink, createSource) = MembershipFlow.membershipFlow()
     private val mergeHubSink = MergeHub.source.toMat(dataSink)(Keep.left).run()
 
+    private val (counterSourceQueue, counterSource) = CountFlow.create
+
     private def agentCreator(exampleAgentConfig: ExampleConfig): ActorRef =
         context.actorOf(ExampleAgent.props(exampleAgentConfig, mergeHubSink), s"ExampleAgent-${exampleAgentConfig.id}")
 
@@ -91,7 +95,7 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
     private val agentPoolService = new AgentPoolRestService(agentPoolActor)
     AppSupervisorActor.addRandomNodes(agentPoolActor)
 
-    private val route: Flow[HttpRequest, HttpResponse, Any] =
+    private val route: Route =
         encodeResponse {
             respondWithHeaders(
                 `Access-Control-Allow-Origin`.*,
@@ -99,30 +103,16 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
             ) {
                 pathPrefix(httpPathPrefix) {
                     path("ws") {
-                        onSuccess(createSource())(exampleWebsocketMessageSource =>
-                            handleWebSocketMessages {
-                                Flow.fromSinkAndSource(
-                                    Sink.ignore,
-                                    exampleWebsocketMessageSource
-                                        .prefixAndTail(1)
-                                        .flatMapConcat { case (head, tail) =>
-                                            Source.single(
-                                                ExampleAgentWebsocketPayload(
-                                                    added = head.head.members,
-                                                    updated = Map.empty,
-                                                    removed = Set.empty)) ++
-                                                tail.map(membershipDelta =>
-                                                    ExampleAgentWebsocketPayload(
-                                                        added = membershipDelta.added,
-                                                        updated = membershipDelta.updated,
-                                                        removed = membershipDelta.removed))
-                                        }
-                                        .conflate(conflateExampleAgentWebsocketPayload)
-                                        // Throttle to avoid overloading frontend
-                                        .throttle(1, 100.millis, 1, ThrottleMode.Shaping)
-                                        .map(exampleAgentWebsocketPayloadFormat.write(_).compactPrint)
-                                        .map(TextMessage.Strict))
-                            })
+                        onSuccess(createSource())(deltaSource => {
+                            val clientFlow = clientWebSocketFlow(counterSource, deltaSource)
+                                .prepend(Source.fromIterator(() => {
+                                    counterSourceQueue.offer(1)
+                                    Iterator.empty
+                                }))
+                                .watchTermination()((_, done) => done.foreach(_ => counterSourceQueue.offer(-1)))
+
+                            handleWebSocketMessages(clientFlow)
+                        })
                     } ~
                         get {
                             path("wsUrl") {

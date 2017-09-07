@@ -20,7 +20,7 @@ object FastStartBroadcast {
     def dataSinkAndDataSourceGenerator[In, Out](pure: In => Out, updateState: (In, Out) => Out, conflate: (Out, Out) => Out)(implicit actorRefFactory: ActorRefFactory, materializer: Materializer): (Sink[In, NotUsed], () => Future[Source[Out, NotUsed]]) = {
         val actor = actorRefFactory.actorOf(FastStartBroadcast.props[In, Out](pure, updateState, conflate))
         val sink: Sink[Data[In], NotUsed] = Sink.actorRefWithAck(actor, OnInitMessage, AckMessage, OnCompleteMessage)
-        val input: Flow[In, Data[In], NotUsed] = Flow[In].map(Data(_))
+        val input: Flow[In, Data[In], NotUsed] = Flow[In].map(Data[In])
         val sourceGenerator: () => Future[Source[Out, NotUsed]] = () => (actor ? CreateSource).mapTo[Source[Out, NotUsed]]
 
         (input.to(sink), sourceGenerator)

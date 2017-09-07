@@ -68,7 +68,10 @@ function calcWsUrl(): Promise<string> {
 type WebSocketPayloadType = NodeDeltasJson | UserCountJson;
 
 function isDelta(payload: WebSocketPayloadType): payload is NodeDeltasJson {
-  return (<NodeDeltasJson>payload).added !== undefined;
+  const nodeDeltasJson = (<NodeDeltasJson>payload);
+  return nodeDeltasJson.added !== undefined ||
+    nodeDeltasJson.removed !== undefined ||
+    nodeDeltasJson.updated !== undefined;
 }
 
 const eventualSocket: Promise<WebSocketSubject<WebSocketPayloadType>> =
@@ -121,7 +124,6 @@ eventualSocket.then(socket => {
             }
             return actionCreators.userCountPayload(payload.userCount);
           })
-          .filter(i => i !== null)
           .map(action => {
             webSocketActionSubject.next(action);
             return action;
