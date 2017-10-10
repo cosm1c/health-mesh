@@ -3,6 +3,7 @@ package prowse.github.cosm1c.healthmesh.util
 import scala.collection.immutable
 import scala.reflect.ClassTag
 
+@SuppressWarnings(Array("org.wartremover.warts.Var"))
 class RingBuffer[T](size: Int)(implicit t: ClassTag[T]) {
 
     private val elems = new Array[T](size)

@@ -13,16 +13,16 @@ import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.{Http, HttpsConnectionContext}
 import akka.pattern.ask
 import akka.stream.ActorMaterializer
-import akka.stream.scaladsl.{Keep, MergeHub, Source}
+import akka.stream.QueueOfferResult.{Dropped, Enqueued, QueueClosed, Failure => QueueFailure}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor.{BatchAgentUpdates, UpdateAgentConfig}
 import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent._
 import prowse.github.cosm1c.healthmesh.agentpool.{AgentPoolActor, AgentPoolRestService, ExampleAgent}
+import prowse.github.cosm1c.healthmesh.faststart.BehaviorBroadcast
 import prowse.github.cosm1c.healthmesh.membership.MembershipFlow
 import prowse.github.cosm1c.healthmesh.swagger.SwaggerDocService
-import prowse.github.cosm1c.healthmesh.usercount.CountFlow
 import prowse.github.cosm1c.healthmesh.websocketflow.ClientWebSocketFlow.clientWebSocketFlow
 
 import scala.concurrent.duration._
@@ -32,6 +32,7 @@ import scala.util.Random
 object AppSupervisorActor {
 
     // For demo only
+    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
     private def addRandomNodes(agentPoolActor: ActorRef): Unit = {
         implicit val timeout: Timeout = Timeout(1.second)
         val numRandomNodes = 100
@@ -82,17 +83,18 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
     private val httpPathPrefix = config.getString("healthmesh.httpPathPrefix")
     private val wsUrl = s"ws://${InetAddress.getLocalHost.getCanonicalHostName}:$httpPort/$httpPathPrefix/ws"
     private val wsUrlResponse = HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, s"""{"wsUrl":"$wsUrl"}"""))
+    private val redirectRoot = redirect(Uri("/" + httpPathPrefix + "/"), StatusCodes.PermanentRedirect)
 
-    private val (dataSink, createSource) = MembershipFlow.membershipFlow()
-    private val mergeHubSink = MergeHub.source.toMat(dataSink)(Keep.left).run()
+    private val userCountBroadcast = new BehaviorBroadcast[Int, Int](0, _ + _)
 
-    private val (counterSourceQueue, counterSource) = CountFlow.create
+    private val membershipBroadcast = new MembershipFlow()
 
     private def agentCreator(exampleAgentConfig: ExampleConfig): ActorRef =
-        context.actorOf(ExampleAgent.props(exampleAgentConfig, mergeHubSink), s"ExampleAgent-${exampleAgentConfig.id}")
+        context.actorOf(ExampleAgent.props(exampleAgentConfig, membershipBroadcast.behaviourBroadcast.queue), s"ExampleAgent-${exampleAgentConfig.id}")
 
     private val agentPoolActor = context.actorOf(AgentPoolActor.props(agentCreator), "AgentPool")
     private val agentPoolService = new AgentPoolRestService(agentPoolActor)
+
     AppSupervisorActor.addRandomNodes(agentPoolActor)
 
     private val route: Route =
@@ -103,16 +105,24 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
             ) {
                 pathPrefix(httpPathPrefix) {
                     path("ws") {
-                        onSuccess(createSource())(deltaSource => {
-                            val clientFlow = clientWebSocketFlow(counterSource, deltaSource)
-                                .prepend(Source.fromIterator(() => {
-                                    counterSourceQueue.offer(1)
-                                    Iterator.empty
-                                }))
-                                .watchTermination()((_, done) => done.foreach(_ => counterSourceQueue.offer(-1)))
+                        onSuccess(userCountBroadcast.queue.offer(1)) {
+                            case Enqueued =>
+                                handleWebSocketMessages(
+                                    clientWebSocketFlow(userCountBroadcast.source, membershipBroadcast.behaviourBroadcast.source)
+                                        .watchTermination()((_, done) => done.foreach(_ => userCountBroadcast.queue.offer(-1))))
 
-                            handleWebSocketMessages(clientFlow)
-                        })
+                            case QueueFailure(cause) =>
+                                log.error(cause, "Failed to enqueue websocket message - Failure")
+                                failWith(cause)
+
+                            case QueueClosed =>
+                                log.error("Failed to enqueue websocket message - QueueClosed")
+                                failWith(new RuntimeException("Failed to enqueue websocket message - QueueClosed"))
+
+                            case Dropped =>
+                                log.error("Packet dropped instead of enqueued - Dropped")
+                                failWith(new RuntimeException("Packet dropped instead of enqueued - Dropped"))
+                        }
                     } ~
                         get {
                             path("wsUrl") {
@@ -122,15 +132,15 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
                                     getFromResource("ui/index.html")
                                 } ~
                                 /*
-                            path("buildInfo") {
-                                get {
-                                    // Set ContentType as we have pre-calculated JSON response as String
-                                    complete(HttpEntity(ContentTypes.`application/json`, BuildInfoHelper.buildInfoJson))
-                                }
-                            } ~
-                            */
+                                path("buildInfo") {
+                                    get {
+                                        // Set ContentType as we have pre-calculated JSON response as String
+                                        complete(HttpEntity(ContentTypes.`application/json`, BuildInfoHelper.buildInfoJson))
+                                    }
+                                } ~
+                                */
                                 path(RemainingPath) { filePath =>
-                                    getFromResource("ui/" + filePath)
+                                    getFromResource("ui/" + filePath.toString)
                                 }
                         } ~
                         agentPoolService.route
@@ -138,13 +148,14 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
                     new SwaggerDocService(actorSystem).routes
             } ~
                 pathEndOrSingleSlash {
-                    redirect(Uri('/' + httpPathPrefix + '/'), StatusCodes.PermanentRedirect)
+                    redirectRoot
                 } ~
                 path(httpPathPrefix) {
-                    redirect(Uri('/' + httpPathPrefix + '/'), StatusCodes.PermanentRedirect)
+                    redirectRoot
                 }
         }
 
+    @SuppressWarnings(Array("org.wartremover.warts.Var"))
     private var bindingFuture: Future[ServerBinding] = _
 
     override def preStart(): Unit = {

@@ -20,7 +20,7 @@ object ClientWebSocketFlow extends ExampleAgent.JsonSupport {
             .flatMapConcat { case (head, tail) =>
                 Source.single(
                     ExampleAgentWebsocketPayload(
-                        added = head.head.members,
+                        added = head.headOption.map(_.members).getOrElse(Map.empty),
                         updated = Map.empty,
                         removed = Set.empty)
                 ) ++ tail.map(membershipDelta =>
@@ -37,7 +37,7 @@ object ClientWebSocketFlow extends ExampleAgent.JsonSupport {
             .map(userCountFormat.write(_).compactPrint)
 
         Flow.fromSinkAndSourceCoupled(
-            Sink.ignore,
+            Sink.ignore, // TODO: disconnect on unexpected data from remote websocket?
             userCountFlow.merge(deltaFlow)
                 // Throttle to avoid overloading frontend
                 .throttle(1, 100.millis, 1, ThrottleMode.Shaping)

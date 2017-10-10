@@ -18,8 +18,8 @@
 
         <scala.version>2.12.3</scala.version>
         <scala.compat.version>2.12</scala.compat.version>
-        <akka.version>2.5.4</akka.version>
-        <akka-http.version>10.0.9</akka-http.version>
+        <akka.version>2.5.6</akka.version>
+        <akka-http.version>10.0.10</akka-http.version>
 
         <app.main.class>prowse.github.cosm1c.healthmesh.Main</app.main.class>
     </properties>
@@ -60,6 +60,17 @@
             <groupId>com.github.swagger-akka-http</groupId>
             <artifactId>swagger-akka-http_${scala.compat.version}</artifactId>
             <version>0.10.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.reactivex</groupId>
+            <artifactId>rxjava</artifactId>
+            <version>1.3.2</version>
+        </dependency>
+        <dependency>
+            <groupId>io.reactivex</groupId>
+            <artifactId>rxjava-reactive-streams</artifactId>
+            <version>1.2.1</version>
         </dependency>
 
         <dependency>

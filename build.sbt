@@ -3,7 +3,7 @@ import sbt.Keys._
 import scala.language.postfixOps
 import scala.sys.process._
 
-val akkaVersion = "2.5.4"
+val akkaVersion = "2.5.6"
 val akkaHttpVersion = "10.0.10"
 
 lazy val root = (project in file("."))
@@ -19,12 +19,16 @@ lazy val root = (project in file("."))
     scalaVersion := "2.12.3",
 
     libraryDependencies ++= Seq(
+      "com.typesafe.akka" %% "akka-typed" % akkaVersion,
       "com.typesafe.akka" %% "akka-stream" % akkaVersion,
       "com.typesafe.akka" %% "akka-http-core" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-http-spray-json" % akkaHttpVersion,
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
-      "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.10.0",
+      "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.11.0",
+
+      "io.reactivex" % "rxjava" % "1.3.2",
+      "io.reactivex" % "rxjava-reactive-streams" % "1.2.1",
 
       "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2",
       "ch.qos.logback" % "logback-classic" % "1.2.3" % Runtime,
@@ -89,3 +93,29 @@ buildJs := {
 assembly := (assembly dependsOn buildJs).value
 
 packageBin in Compile := (packageBin in Compile dependsOn buildJs).value
+
+//Warts.unsafe only to avoid false positives
+wartremoverErrors ++= List(
+  // TODO: use Any when switched to typed Akka
+  //  Wart.Any,
+  Wart.AsInstanceOf,
+  //  Wart.DefaultArguments,
+  Wart.EitherProjectionPartial,
+  Wart.IsInstanceOf,
+  Wart.TraversableOps,
+  //  Wart.NonUnitStatements,
+  Wart.Null,
+  Wart.OptionPartial,
+  Wart.Product,
+  Wart.Return,
+  Wart.Serializable,
+  Wart.StringPlusAny,
+  Wart.Throw,
+  Wart.TryPartial,
+  Wart.Var
+)
+
+wartremoverExcluded += sourceManaged.value / "main" / "sbt-buildinfo" / "BuildInfo.scala"
+//wartremoverExcluded ++= ((sourceManaged.value / "main") ** "*.scala").get
+
+//scalacOptions ++= scalafixScalacOptions.value

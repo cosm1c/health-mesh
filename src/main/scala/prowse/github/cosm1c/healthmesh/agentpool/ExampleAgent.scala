@@ -3,27 +3,25 @@ package prowse.github.cosm1c.healthmesh.agentpool
 import java.time.{Clock, Instant}
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
-import akka.NotUsed
 import akka.actor.{Actor, ActorLogging, Cancellable, Props}
 import akka.http.scaladsl.HttpsConnectionContext
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.stream.QueueOfferResult.{Dropped, Enqueued, QueueClosed, Failure => QueueFailure}
-import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.{Materializer, OverflowStrategy}
+import akka.stream.scaladsl.SourceQueueWithComplete
 import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor.FetchConfig
 import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent._
 import prowse.github.cosm1c.healthmesh.membership.MembershipFlow.{MemberId, MembershipCommand, MembershipDelta}
 import spray.json
 import spray.json._
 
-import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
+import scala.concurrent.{Await, ExecutionContextExecutor}
 import scala.util.{Failure, Random, Success}
 
 object ExampleAgent {
 
-    def props(config: ExampleConfig, out: Sink[MembershipCommand[ExampleAgentUpdate], NotUsed])(implicit clock: Clock, materializer: Materializer, httpsContext: HttpsConnectionContext): Props =
-        Props(new ExampleAgent(config, out))
+    def props(config: ExampleConfig, outQueue: SourceQueueWithComplete[MembershipCommand[ExampleAgentUpdate]])(implicit clock: Clock, httpsContext: HttpsConnectionContext): Props =
+        Props(new ExampleAgent(config, outQueue))
 
     type ExampleAgentId = String
 
@@ -78,9 +76,9 @@ object ExampleAgent {
         implicit object HealthStatusJsonFormat extends RootJsonFormat[HealthStatus.HealthStatusType] {
             def write(obj: HealthStatus.HealthStatusType): JsValue = JsString(obj.toString)
 
-            def read(json: JsValue): HealthStatus.HealthStatusType = json match {
+            def read(jsValue: JsValue): HealthStatus.HealthStatusType = jsValue match {
                 case JsString(str) => HealthStatus.withName(str)
-                case _ => throw DeserializationException("Enum string expected")
+                case _ => json.deserializationError("Enum string expected")
             }
         }
 
@@ -115,7 +113,7 @@ object ExampleAgent {
                     case x: JsObject => x.fields.map { field =>
                         (JsString(field._1).convertTo[Int], field._2.convertTo[V])
                     }(collection.breakOut)
-                    case x => deserializationError("Expected Map as JsObject, but got " + x)
+                    case x => deserializationError("Expected Map as JsObject, but got " + x.toString)
                 }
 
             }
@@ -127,13 +125,13 @@ object ExampleAgent {
 
 }
 
-class ExampleAgent(private var config: ExampleConfig, out: Sink[MembershipCommand[ExampleAgentUpdate], NotUsed])(implicit clock: Clock, materializer: Materializer, httpsContext: HttpsConnectionContext) extends Actor with ActorLogging {
+@SuppressWarnings(Array("org.wartremover.warts.Var"))
+class ExampleAgent(private var config: ExampleConfig, outQueue: SourceQueueWithComplete[MembershipCommand[ExampleAgentUpdate]])(implicit clock: Clock, httpsContext: HttpsConnectionContext) extends Actor with ActorLogging {
 
     // So httpContext is used
     httpsContext.toString
 
     private implicit val executionContext: ExecutionContextExecutor = context.dispatcher
-    private val outQueue = Source.queue(0, OverflowStrategy.backpressure).toMat(out)(Keep.left).run()
 
     private var flashMillis = config.pollMillis
     private var lastPollMillis = clock.millis()
@@ -145,12 +143,13 @@ class ExampleAgent(private var config: ExampleConfig, out: Sink[MembershipComman
             label = config.label,
             depends = config.depends,
             healthStatus = HealthStatus.Unknown
-        ))))
-
-    self ! PollNow
+        )))
+    ).foreach(_ => self ! PollNow)
 
     override def postStop(): Unit = {
-        outQueue.offer(MembershipCommand[ExampleAgentUpdate](remove = Set(config.id)))
+        Await.result(
+            outQueue.offer(MembershipCommand[ExampleAgentUpdate](remove = Set(config.id))),
+            5.seconds)
         ()
     }
 

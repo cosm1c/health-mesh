@@ -59,6 +59,7 @@ class AgentPoolActor(agentCreator: ExampleConfig => ActorRef) extends Actor with
     private implicit val timeout: Timeout = Timeout(1.second)
     private implicit val executionContext: ExecutionContextExecutor = context.dispatcher
 
+    @SuppressWarnings(Array("org.wartremover.warts.Var"))
     private var pool = Map.empty[ExampleAgentId, ActorRef]
 
     override def receive: Receive = {
