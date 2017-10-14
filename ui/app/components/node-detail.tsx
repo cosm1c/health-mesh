@@ -1,6 +1,6 @@
 import * as React from 'react';
 import {NodeInfoRecord} from '../immutable/NodeInfoRecord';
-import {Panel, Table} from 'react-bootstrap';
+import {Button, Panel, Table} from 'react-bootstrap';
 
 export interface NodeDetailViewOwnProps {
   className?: string;
@@ -23,6 +23,11 @@ export const NodeDetailView: React.StatelessComponent<NodeDetailViewOwnProps & N
   return (<Panel className={className} style={style}>
     <Table condensed>
       <tbody>
+      <tr>
+        <td colSpan={2}><Button onClick={() => fetch(
+          `/health-mesh/agent/${selectedNode.id}`,
+          {method: 'POST'})}>Poll Now</Button></td>
+      </tr>
       <tr>
         <th>Label</th>
         <td>{selectedNode.label}</td>

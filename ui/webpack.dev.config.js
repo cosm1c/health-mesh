@@ -112,9 +112,10 @@ module.exports = {
 
   devServer: {
     proxy: {
-      '/ws': {
-        changeOrigin: true,
-        ws: true
+      '/health-mesh': {
+        target: 'http://localhost:18080',
+        changeOrigin: true/*,
+        secure: false*/
       }
     },
     compress: true,

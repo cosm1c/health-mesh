@@ -33,7 +33,7 @@ export class ListView extends React.Component<ListViewProps & ListViewOwnProps, 
 
   private handleFilterChange = (event: React.FormEvent<FormControl>) => {
     this.setState({
-      labelFilterRegexp: new RegExp(event.currentTarget.props.value as string, 'i')
+      labelFilterRegexp: new RegExp((event.currentTarget as any).value as string, 'i')
     });
   };
 

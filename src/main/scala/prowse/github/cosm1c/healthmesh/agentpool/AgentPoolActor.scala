@@ -5,7 +5,8 @@ import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Terminated}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
-import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent.{ExampleAgentId, ExampleConfig, ExampleRequestPayload, ExampleResponsePayload}
+import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent._
+import prowse.github.cosm1c.healthmesh.util.ReplyStatus
 import spray.json.JsValue
 
 import scala.concurrent.duration._
@@ -33,6 +34,8 @@ object AgentPoolActor extends SprayJsonSupport {
     final case class PostAgentRequest(id: ExampleAgentId, payload: ExampleRequestPayload)
 
     final case class PostAgentResponse(payload: ExampleResponsePayload)
+
+    final case class AgentPollNow(id: ExampleAgentId)
 
 
     private def lifecycleActorProps(agentId: ExampleAgentId, child: ActorRef): Props = Props(new AgentLifecycleActor(agentId, child))
@@ -63,6 +66,16 @@ class AgentPoolActor(agentCreator: ExampleConfig => ActorRef) extends Actor with
     private var pool = Map.empty[ExampleAgentId, ActorRef]
 
     override def receive: Receive = {
+
+        case AgentPollNow(id) =>
+            pool.get(id) match {
+                case Some(actorRef) =>
+                    actorRef ! PollNow
+                    sender() ! ReplyStatus.Success
+
+                case None =>
+                    sender() ! ReplyStatus.Failure
+            }
 
         case PostAgentRequest(id, msg) =>
             pool.get(id) match {

@@ -121,7 +121,7 @@ object ExampleAgent {
         implicit val exampleAgentWebsocketPayloadFormat: RootJsonFormat[ExampleAgentWebsocketPayload] = jsonFormat3(ExampleAgentWebsocketPayload)
     }
 
-    private final case object PollNow
+    final case object PollNow
 
 }
 
