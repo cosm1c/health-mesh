@@ -27,9 +27,9 @@ gulp.task('package', ['clean', 'test'], function (cb) {
     webpack = require('webpack');
 
   webpack(webpackConfig, function (err, stats) {
-    if (err || stats.hasErrors()) throw err;
     // see: https://webpack.github.io/docs/node.js-api.html#stats-tostring
     gutil.log("[webpack stats]", stats.toString());
+    if (err || stats.hasErrors()) throw err;
     cb();
   });
 });

@@ -1,7 +1,8 @@
 import * as React from 'react';
 import * as Immutable from 'immutable';
-import {NodeCard} from './';
 import {NodeInfoRecord, NodeInfoRecordMap} from '../immutable';
+import {FormControl, FormGroup, InputGroup, ListGroup, ListGroupItem} from 'react-bootstrap';
+import {bsStyleForHealth} from '../NodeInfo';
 
 interface ListViewOwnProps {
   className?: string;
@@ -21,22 +22,6 @@ interface ListViewState {
 
 const DEFAULT_REGEX = new RegExp('');
 
-type NodeCardListItemProps = {
-  onClick: React.MouseEventHandler<any>;
-  isSelected: boolean;
-  nodeInfoRecord: NodeInfoRecord;
-  recentlyUpdate: boolean;
-};
-
-const NodeCardListItem: React.StatelessComponent<NodeCardListItemProps> = (props) => {
-  const {onClick, nodeInfoRecord, isSelected, recentlyUpdate} = props;
-
-  return (<li key={nodeInfoRecord.id} onClick={onClick}>
-    <NodeCard isSelected={isSelected} nodeInfoRecord={nodeInfoRecord} recentlyUpdate={recentlyUpdate}/>
-  </li>);
-};
-
-
 export class ListView extends React.Component<ListViewProps & ListViewOwnProps, ListViewState> {
 
   constructor(props: ListViewProps) {
@@ -46,9 +31,9 @@ export class ListView extends React.Component<ListViewProps & ListViewOwnProps, 
     };
   }
 
-  private handleFilterChange = (event: React.FormEvent<HTMLInputElement>) => {
+  private handleFilterChange = (event: React.FormEvent<FormControl>) => {
     this.setState({
-      labelFilterRegexp: new RegExp(event.currentTarget.value, 'i')
+      labelFilterRegexp: new RegExp(event.currentTarget.props.value as string, 'i')
     });
   };
 
@@ -68,19 +53,29 @@ export class ListView extends React.Component<ListViewProps & ListViewOwnProps, 
     const {className, style, nodeInfoRecordMap, changeSelection, selection} = this.props;
 
     return (<div className={className} style={style}>
-      <label className='filter'>Filter
-        <input type='search' autoComplete='on' autoFocus={true} placeholder='enter substring'
-               onChange={this.handleFilterChange}/>
-      </label>
-      <ul className='itemlist'>{
+      <form>
+        <FormGroup>
+          <InputGroup>
+            <InputGroup.Addon>Filter</InputGroup.Addon>
+            <FormControl type='text' autoFocus={true} placeholder='enter substring'
+                         onChange={this.handleFilterChange}/>
+          </InputGroup>
+        </FormGroup>
+      </form>
+
+      <ListGroup className='itemlist'>{
         nodeInfoRecordMap.valueSeq()
           .filter(this.filterPredicate)
           .sort(ListView.compareByLabel)
           .map(o =>
-            <NodeCardListItem key={o!.id} nodeInfoRecord={o!} isSelected={ListView.isNodeSelected(o!.id, selection)}
-                              recentlyUpdate={this.props.recentlyUpdated.has(o!.id)}
-                              onClick={() => changeSelection([o!.id])}/>)
-      }</ul>
+            <ListGroupItem key={o!.id} bsStyle={bsStyleForHealth(o!.healthStatus)}
+                           active={ListView.isNodeSelected(o!.id, selection)}
+                           onClick={() => changeSelection([o!.id])}>{o!.label}</ListGroupItem>)
+        /*
+          TODO: UX for isSelected and recentlyUpdate
+          recentlyUpdate={this.props.recentlyUpdated.has(o!.id)}
+        */
+      }</ListGroup>
     </div>);
   }
 }

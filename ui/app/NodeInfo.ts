@@ -22,6 +22,19 @@ export interface UserCountJson {
   readonly userCount: number;
 }
 
+export function bsStyleForHealth(healthStatus: string): string {
+  switch (healthStatus) {
+    case 'Unknown':
+      return 'warning';
+    case 'Healthy':
+      return 'success';
+    case 'Unhealthy':
+      return 'danger';
+    default:
+      return 'info';
+  }
+}
+
 export function colorForHealth(healthStatus: string): { color: string, backgroundColor: string, borderColor: string } {
   switch (healthStatus) {
     case 'Unknown':

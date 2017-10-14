@@ -5,15 +5,17 @@ import {connect} from 'react-redux';
 import {DataSet, Edge as GraphEdge, Network, Node as GraphNode} from 'vis';
 import {colorForHealth, NodeDeltasJson} from '../NodeInfo';
 import {NodeInfoRecordMap, WebSocketStateEnum} from '../immutable';
-import {ListView, StatusBar} from './';
+import {ListView} from './';
 import {IRootStateRecord} from '../modules';
 import {webSocketActionSubject} from '../modules/websocket/epics';
-import {WEBSOCKET_CONNECTED, DELTA_PAYLOAD, WebSocketAction} from '../modules/websocket/actions';
+import {DELTA_PAYLOAD, WEBSOCKET_CONNECTED, WebSocketAction} from '../modules/websocket/actions';
 import {getWebSocketStateEnum} from '../modules/websocket/selectors';
 import {NodeDetailView} from './node-detail';
 import {getMetadataIndex} from '../modules/root-selectors';
 import {NodeInfoRecord} from '../immutable/NodeInfoRecord';
 import {getUserCount} from '../modules/metadata/selectors';
+import {websocketStateDisplay} from '../immutable/WebSocketStateRecord';
+import {Label, Panel} from 'react-bootstrap';
 
 interface DigraphOwnProps {
   className?: string;
@@ -72,6 +74,8 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
 
   private network: Network;
   private networkEl: HTMLDivElement;
+  private firstPacketReceived: boolean = false;
+  private initializing: boolean = true;
 
   constructor(props: DigraphProps) {
     super(props);
@@ -122,6 +126,8 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
       case WEBSOCKET_CONNECTED:
         this.edges.clear();
         this.nodes.clear();
+        this.firstPacketReceived = false;
+        this.initializing = true;
         this.setState({recentlyUpdated: this.state.recentlyUpdated.clear()});
         break;
 
@@ -137,38 +143,49 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
         this.edges.update(edgesFor(action.payload, 'added'));
         this.edges.update(edgesFor(action.payload, 'updated'));
 
-        const addedAndUpdatedIds: Immutable.Set<string> = Immutable.Set<string>(
-          Object.keys(action.payload.updated).concat(Object.keys(action.payload.added)));
-
-        const newRecentlyUpdated = this.state.recentlyUpdated.withMutations(mutable => {
-          action.payload.removed.forEach(id => mutable.delete(id));
-          addedAndUpdatedIds.forEach(id => mutable.add(id!));
-        });
-        if (newRecentlyUpdated !== this.state.recentlyUpdated) {
-          this.setState({recentlyUpdated: newRecentlyUpdated});
-        }
-
-        setTimeout(() => {
-          const oldestFlashInstant = Date.now() - flashDuration;
-          const {index} = this.props;
-          const {recentlyUpdated} = this.state;
-
-          const culledRecent = recentlyUpdated.withMutations(mutable => {
-            addedAndUpdatedIds
-              .filter(id => oldestFlashInstant >= index.get(id!).lastUpdatedInstant)
-              .forEach(id => {
-                mutable.delete(id!);
-                this.nodes.update({
-                  id: id,
-                  shadow: false
-                } as GraphNode);
-              });
-          });
-          if (culledRecent !== recentlyUpdated) {
-            this.setState({recentlyUpdated: culledRecent});
+        if (this.initializing) {
+          if (!this.firstPacketReceived) {
+            this.firstPacketReceived = true;
+            setTimeout(() => {
+              this.network.fit();
+              this.initializing = false;
+            }, 250);
           }
 
-        }, flashDuration);
+        } else {
+          const addedAndUpdatedIds: Immutable.Set<string> = Immutable.Set<string>(
+            Object.keys(action.payload.updated).concat(Object.keys(action.payload.added)));
+
+          const newRecentlyUpdated = this.state.recentlyUpdated.withMutations(mutable => {
+            action.payload.removed.forEach(id => mutable.delete(id));
+            addedAndUpdatedIds.forEach(id => mutable.add(id!));
+          });
+          if (newRecentlyUpdated !== this.state.recentlyUpdated) {
+            this.setState({recentlyUpdated: newRecentlyUpdated});
+          }
+
+          setTimeout(() => {
+            const oldestFlashInstant = Date.now() - flashDuration;
+            const {index} = this.props;
+            const {recentlyUpdated} = this.state;
+
+            const culledRecent = recentlyUpdated.withMutations(mutable => {
+              addedAndUpdatedIds
+                .filter(id => oldestFlashInstant >= index.get(id!).lastUpdatedInstant)
+                .forEach(id => {
+                  mutable.delete(id!);
+                  this.nodes.update({
+                    id: id,
+                    shadow: false
+                  } as GraphNode);
+                });
+            });
+            if (culledRecent !== recentlyUpdated) {
+              this.setState({recentlyUpdated: culledRecent});
+            }
+
+          }, flashDuration);
+        }
         break;
     }
   }
@@ -187,26 +204,45 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
     }
   };
 
+  private static websocketLabel(socketState: WebSocketStateEnum) {
+    switch (socketState) {
+      case WebSocketStateEnum.DISCONNECTED:
+        return (<Label bsStyle='danger'>Disconnected</Label>);
+      case WebSocketStateEnum.CONNECTING:
+        return (<Label bsStyle='info'>Connecting</Label>);
+      case WebSocketStateEnum.CONNECTED:
+        return (<Label bsStyle='success'>Connected</Label>);
+      case WebSocketStateEnum.DISCONNECTING:
+        return (<Label bsStyle='default'>Disconnecting</Label>);
+      default:
+        return (<Label bsStyle='warning'>Unknown {websocketStateDisplay(socketState)}</Label>);
+    }
+  }
+
   render() {
     const {className, style, index, socketState, userCount} = this.props;
     const digraphClass = classNames(className, 'digraph');
 
     return (<div className={digraphClass} style={style}>
-      <StatusBar className='digraph-statusbar'
-                 nodeCount={this.nodes.length}
-                 edgeCount={this.edges.length}
-                 socketState={socketState}
-                 userCount={userCount}/>
-      <div className='digraph-network' ref={(divEl) => divEl ? this.networkEl = divEl : null}/>
+      <Panel className='statusbar'>
+        {NetworkDigraphComponent.websocketLabel(socketState)}
+        <Label bsStyle='info'>User Count: {userCount}</Label>
+        <Label bsStyle='info'>Nodes: {this.nodes.length}</Label>
+        <Label bsStyle='info'>Edges: {this.edges.length}</Label>
+      </Panel>
 
-      <div className='detail-view'>
-        <NodeDetailView className='digraph-detailview'
-                        selectedNode={this.state.selection.length > 0 ? index.get(this.state.selection[0]) : undefined}/>
-        <ListView className='digraph-listview'
-                  changeSelection={this.changeSelection}
-                  selection={this.state.selection}
-                  recentlyUpdated={this.state.recentlyUpdated}
-                  nodeInfoRecordMap={index}/>
+      <div className={'digraph-inner'}>
+        <div className={'digraph-controls'}>
+          <NodeDetailView className='digraph-detailview'
+                          selectedNode={this.state.selection.length > 0 ? index.get(this.state.selection[0]) : undefined}/>
+          <ListView className='digraph-listview'
+                    changeSelection={this.changeSelection}
+                    selection={this.state.selection}
+                    recentlyUpdated={this.state.recentlyUpdated}
+                    nodeInfoRecordMap={index}/>
+        </div>
+
+        <div className={'digraph-network'} ref={(divEl) => divEl ? this.networkEl = divEl : null}/>
       </div>
     </div>);
   }

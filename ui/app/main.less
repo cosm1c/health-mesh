@@ -1,102 +1,93 @@
 @import '../../node_modules/normalize.css/normalize.css';
 @import '../../node_modules/vis/dist/vis.min.css';
 
+@navbar-height: 52px;
+@statusbar-height: 3rem;
+@digraph-height: calc(100vh - @navbar-height - @statusbar-height);
+@digraph-detail-view-height: 26rem;
+@digraph-list-view-height: calc(@digraph-height - @digraph-detail-view-height);
+@digraph-item-list-height: calc(@digraph-list-view-height - 34px);
+
 html, body,
-[data-reactroot],
-#root,
-.home-container {
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  padding: 0;
+#root {
+  width: 100%;
+  height: 100%;
 }
 
-@header-height: 2.5rem;
-@statusbar-height: 1.5rem;
-@content-height: (100vh - @header-height - @statusbar-height);
-@detailview-height: 12rem;
-@search-height: 1.5rem;
-@listview-height: (@content-height - @detailview-height - @search-height);
-
-.home-container {
-
-  .home-header {
-    height: @header-height;
-    background-color: #1e90ff;
-
-    ul, li {
-      display: inline;
-
-      .brand {
-        font-size: 1.5em;
-      }
-
-      .brand,
-      .tech-stack,
-      .swagger-json,
-      .about {
-        color: #000000;
-      }
-
-      &:not(:first-child) {
-        padding-left: 1rem;
-      }
-    }
+#root {
+  .container {
+    width: 100%;
   }
 
-  .home-digraph {
+  .navbar {
+    margin: 0;
+  }
+}
+
+.statusbar {
+  width: 100%;
+  margin: 0;
+  min-height: @statusbar-height;
+  max-height: @statusbar-height;
+
+  .panel-body {
+    padding: 0.25rem;
+
+    .label {
+      margin: 0 0.5rem;
+    }
   }
 }
 
 .digraph {
-  display: grid;
-  grid-template-rows: @statusbar-height auto;
-  grid-template-columns: 1fr 15rem;
-  grid-template-areas: "statusbar statusbar" "digraph detailview";
+}
 
-  .digraph-statusbar {
-    grid-area: statusbar;
-    background-color: #d3d3d3;
+.digraph-inner {
+  display: flex;
+  flex-direction: row-reverse;
+}
 
-    ul, li {
-      display: inline;
+.digraph-controls {
+  height: @digraph-height;
+  border-left: solid #d3d3d3 0.3rem;
+  width: 25rem;
+}
 
-      &:not(:first-child) {
-        padding-left: 1rem;
-      }
-    }
+.digraph-network {
+  flex: 1;
+  height: @digraph-height;
+}
+
+.digraph-detailview {
+  height: @digraph-detail-view-height;
+  overflow: auto;
+  margin-bottom: 0;
+
+  .panel-body {
+    padding: 0;
   }
 
-  .digraph-network {
-    grid-area: digraph;
-    height: @content-height;
+  table {
+    margin-bottom: 0;
+    padding: 0;
+  }
+}
+
+.digraph-listview {
+  height: @digraph-list-view-height;
+
+  .form-group {
+    margin-bottom: 0;
   }
 
-  .detail-view {
-    grid-area: detailview;
-    height: @content-height;
-    border-left: solid #d3d3d3 0.3rem;
-    width: 100%;
-
-    .digraph-detailview {
-      height: @detailview-height;
-      overflow: auto;
-    }
-
-    .digraph-listview {
-      label.filter {
-        height: @search-height;
-        border-top: solid lightgrey 0.3rem;
-        margin: 0;
-      }
-
-      .itemlist {
-        height: @listview-height;
-        overflow: auto;
-        border-top: solid lightgrey 0.3rem;
-        padding: 0;
-        list-style-type: none;
-      }
-    }
+  .itemlist {
+    height: @digraph-item-list-height;
+    overflow: auto;
+    padding: 0;
   }
+}
+
+.nopadding {
+  padding: 0 !important;
+  margin: 0 !important;
 }

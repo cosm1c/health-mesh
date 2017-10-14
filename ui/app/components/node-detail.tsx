@@ -1,5 +1,6 @@
 import * as React from 'react';
 import {NodeInfoRecord} from '../immutable/NodeInfoRecord';
+import {Panel, Table} from 'react-bootstrap';
 
 export interface NodeDetailViewOwnProps {
   className?: string;
@@ -19,8 +20,8 @@ export const NodeDetailView: React.StatelessComponent<NodeDetailViewOwnProps & N
     </div>);
   }
 
-  return (<div className={className} style={style}>
-    <table>
+  return (<Panel className={className} style={style}>
+    <Table condensed>
       <tbody>
       <tr>
         <th>Label</th>
@@ -49,10 +50,12 @@ export const NodeDetailView: React.StatelessComponent<NodeDetailViewOwnProps & N
       {selectedNode.lastPollResult &&
       <tr>
         <th>Result</th>
-        <td><pre>{selectedNode.lastPollResult}</pre></td>
+        <td>
+          <pre>{selectedNode.lastPollResult}</pre>
+        </td>
       </tr>
       }
       </tbody>
-    </table>
-  </div>);
+    </Table>
+  </Panel>);
 };

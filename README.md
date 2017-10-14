@@ -17,7 +17,7 @@ Tech Stack:
 * [RxJS 5](http://reactivex.io/rxjs/)
 * [WebSocket](https://www.w3.org/TR/websockets/)
 * [Jest](https://facebook.github.io/jest/)
-* [React](https://facebook.github.io/react/) with [React Modal](https://reactcommunity.org/react-modal/)
+* [React](https://facebook.github.io/react/) with [React Bootstrap](https://react-bootstrap.github.io/)
  and [React Redux](http://redux.js.org/docs/basics/UsageWithReact.html)
 * [Redux](http://redux.js.org/) with [redux-observable](https://redux-observable.js.org/)
  and [react-redux-typescript](https://github.com/piotrwitek/react-redux-typescript)
