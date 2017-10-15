@@ -72,7 +72,7 @@ export class ListView extends React.Component<ListViewProps & ListViewOwnProps, 
                            active={ListView.isNodeSelected(o!.id, selection)}
                            onClick={() => changeSelection([o!.id])}>{o!.label}</ListGroupItem>)
         /*
-          TODO: UX for isSelected and recentlyUpdate
+          TODO: UX for recentlyUpdate
           recentlyUpdate={this.props.recentlyUpdated.has(o!.id)}
         */
       }</ListGroup>

@@ -12,6 +12,8 @@ import scala.concurrent.duration._
 
 object ClientWebSocketFlow extends ExampleAgent.JsonSupport {
 
+    private val keepAlive: String = ""
+
     def clientWebSocketFlow(counterSource: Source[Int, NotUsed],
                             deltaSource: Source[MembershipFlow.MembershipDelta[ExampleAgent.ExampleAgentUpdate], NotUsed]): Flow[Any, TextMessage.Strict, NotUsed] = {
 
@@ -33,6 +35,7 @@ object ClientWebSocketFlow extends ExampleAgent.JsonSupport {
             .map(exampleAgentWebsocketPayloadFormat.write(_).compactPrint)
 
         val userCountFlow = counterSource
+            .conflate(_ + _)
             .map(UserCount)
             .map(userCountFormat.write(_).compactPrint)
 
@@ -41,6 +44,7 @@ object ClientWebSocketFlow extends ExampleAgent.JsonSupport {
             userCountFlow.merge(deltaFlow)
                 // Throttle to avoid overloading frontend
                 .throttle(1, 100.millis, 1, ThrottleMode.Shaping)
+                .keepAlive(55.seconds, () => keepAlive)
                 .map(TextMessage.Strict)
         )
     }

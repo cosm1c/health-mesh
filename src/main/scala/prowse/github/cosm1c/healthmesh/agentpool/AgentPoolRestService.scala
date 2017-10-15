@@ -10,9 +10,10 @@ import akka.pattern.ask
 import akka.stream.Materializer
 import akka.util.Timeout
 import io.swagger.annotations._
-import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor.{FetchAgentConfig, ListAgents, PostAgentRequest, RemoveAgent, UpdateAgentConfig}
+import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor.{AgentPollNow, FetchAgentConfig, ListAgents, PostAgentRequest, RemoveAgent, UpdateAgentConfig}
 import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolRestService.{AgentDeletedResponse, AgentNotFoundResponse}
 import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent.{ExampleConfig, ExampleRequestPayload, ExampleResponsePayload}
+import prowse.github.cosm1c.healthmesh.util.ReplyStatus
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
@@ -38,7 +39,8 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
                 putAgentConfig ~
                 delAgent ~
                 listAgents ~
-                getAgentConfig
+                getAgentConfig ~
+                agentPollNow
         }
 
     @ApiOperation(value = "Fetch set of all agent ids", httpMethod = "GET", responseContainer = "Set", response = classOf[String])
@@ -111,10 +113,10 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
             }
         }
 
-    @ApiOperation(value = "Delete Agent", httpMethod = "POST")
+    @ApiOperation(value = "Send message to Agent", httpMethod = "POST")
     @ApiImplicitParams(Array(
         new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataTypeClass = classOf[String], paramType = "path"),
-        new ApiImplicitParam(name = "message", value = "Message to send to actor", paramType = "body", dataTypeClass = classOf[ExampleRequestPayload])
+        new ApiImplicitParam(name = "message", value = "Message to send to agent actor", paramType = "body", dataTypeClass = classOf[ExampleRequestPayload])
     ))
     @Path("/{agentId}")
     def postAgentMessage: Route =
@@ -127,4 +129,20 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
                 }
             }
         }
+
+    @ApiOperation(value = "Request immediate poll from Agent", httpMethod = "POST")
+    @ApiImplicitParams(Array(
+        new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataTypeClass = classOf[String], paramType = "path")
+    ))
+    @Path("/pollNow/{agentId}")
+    def agentPollNow: Route =
+        post {
+            path("pollNow" / RemainingPath) { agentId =>
+                onSuccess((agentPoolActor ? AgentPollNow(agentId.toString)).mapTo[ReplyStatus.Status]) {
+                    case ReplyStatus.Success => complete(StatusCodes.OK)
+                    case ReplyStatus.Failure => complete(StatusCodes.NotFound)
+                }
+            }
+        }
+
 }

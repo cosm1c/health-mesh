@@ -2,7 +2,6 @@ package prowse.github.cosm1c.healthmesh
 
 import java.net.InetAddress
 import java.time.Clock
-import java.util.concurrent.TimeUnit
 
 import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem}
 import akka.http.scaladsl.Http.ServerBinding
@@ -18,13 +17,12 @@ import akka.stream.QueueOfferResult.{Dropped, Enqueued, QueueClosed, Failure => 
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor.{AgentPollNow, BatchAgentUpdates, UpdateAgentConfig}
+import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor.{BatchAgentUpdates, UpdateAgentConfig}
 import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent._
 import prowse.github.cosm1c.healthmesh.agentpool.{AgentPoolActor, AgentPoolRestService, ExampleAgent}
-import prowse.github.cosm1c.healthmesh.faststart.BehaviorBroadcast
 import prowse.github.cosm1c.healthmesh.membership.MembershipFlow
+import prowse.github.cosm1c.healthmesh.rx.BehaviorSubjectAdapter
 import prowse.github.cosm1c.healthmesh.swagger.SwaggerDocService
-import prowse.github.cosm1c.healthmesh.util.ReplyStatus
 import prowse.github.cosm1c.healthmesh.websocketflow.ClientWebSocketFlow.clientWebSocketFlow
 
 import scala.concurrent.duration._
@@ -78,7 +76,6 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
     private implicit val executionContextExecutor: ExecutionContextExecutor = context.dispatcher
     private implicit val materializer: ActorMaterializer = ActorMaterializer()
     private implicit val clock: Clock = Clock.systemUTC()
-    private implicit val timeout: Timeout = Timeout(1, TimeUnit.SECONDS)
     private implicit val httpsContext: HttpsConnectionContext = Http().createClientHttpsContext(AkkaSSLConfig().mapSettings(s => s.withLoose(s.loose.withDisableSNI(true))))
 
     private val config = ConfigFactory.load()
@@ -88,7 +85,7 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
     private val wsUrlResponse = HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, s"""{"wsUrl":"$wsUrl"}"""))
     private val redirectRoot = redirect(Uri("/" + httpPathPrefix + "/"), StatusCodes.PermanentRedirect)
 
-    private val userCountBroadcast = new BehaviorBroadcast[Int, Int](0, _ + _)
+    private val userCountBroadcast = new BehaviorSubjectAdapter[Int, Int](0, _ + _)
 
     private val membershipBroadcast = new MembershipFlow()
 
@@ -127,15 +124,6 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
                                 failWith(new RuntimeException("Packet dropped instead of enqueued - Dropped"))
                         }
                     } ~
-                        post {
-                            path("agent" / RemainingPath) { agentId =>
-                                log.info("Polling agent {}", agentId)
-                                onSuccess((agentPoolActor ? AgentPollNow(agentId.toString)).mapTo[ReplyStatus.Status]) {
-                                    case ReplyStatus.Success => complete(StatusCodes.OK)
-                                    case ReplyStatus.Failure => complete(StatusCodes.NotFound)
-                                }
-                            }
-                        } ~
                         get {
                             path("wsUrl") {
                                 complete(wsUrlResponse)

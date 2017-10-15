@@ -1,5 +1,5 @@
 {
-  "name": "ui",
+  "name": "health-mesh-ui",
   "version": "1.0.0",
   "description": "UI sub-project",
   "dependencies": {
@@ -14,7 +14,6 @@
     "es6-iterator": "^2.0.1",
     "es6-promise": "^4.1.1",
     "immutable": "^3.8.1",
-    "normalize.css": "^7.0.0",
     "react": "^16",
     "react-bootstrap": "^0.31.3",
     "react-dom": "^16",

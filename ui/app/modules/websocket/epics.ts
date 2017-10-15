@@ -16,7 +16,7 @@ import {NodeDeltasJson, UserCountJson} from '../../NodeInfo';
 import store from '../../store';
 import {WebSocketAction} from './actions';
 import {epic$} from '../root-epic';
-import "rxjs/add/operator/filter";
+import 'rxjs/add/operator/filter';
 
 // Used by DefinePlugin
 declare const IS_PROD: string;
@@ -66,6 +66,11 @@ function calcWsUrl(): Promise<string> {
 }
 
 type WebSocketPayloadType = NodeDeltasJson | UserCountJson;
+
+function isUserCount(payload: WebSocketPayloadType): payload is UserCountJson {
+  const userCountJson = (<UserCountJson>payload);
+  return userCountJson.userCount !== undefined;
+}
 
 function isDelta(payload: WebSocketPayloadType): payload is NodeDeltasJson {
   const nodeDeltasJson = (<NodeDeltasJson>payload);
@@ -122,7 +127,10 @@ eventualSocket.then(socket => {
             if (isDelta(payload)) {
               return actionCreators.deltaPayload(payload);
             }
-            return actionCreators.userCountPayload(payload.userCount);
+            if (isUserCount(payload)) {
+              return actionCreators.userCountPayload(payload.userCount);
+            }
+            return actionCreators.keepAlivePayload();
           })
           .map(action => {
             webSocketActionSubject.next(action);

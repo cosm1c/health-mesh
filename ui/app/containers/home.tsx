@@ -60,7 +60,7 @@ export class Home extends React.Component<HomeProps, HomeState> {
 
       <Modal show={this.state.showTechStackModal} onHide={this.closeTechStackModal}>
         <Modal.Header closeButton>
-          <Modal.Title>Tech STack</Modal.Title>
+          <Modal.Title>Tech Stack</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <article id='techstack'>
@@ -74,6 +74,7 @@ export class Home extends React.Component<HomeProps, HomeState> {
               <li><a href='http://akka.io/'>Akka</a> with <a
                 href='http://doc.akka.io/docs/akka/current/scala/stream/index.html'>Akka Streams</a> and <a
                 href='http://doc.akka.io/docs/akka-http/current/scala/http/index.html'>Akka HTTP</a></li>
+              <li><a href='https://github.com/ReactiveX/RxJava'>RxJava</a></li>
               <li><a href='https://swagger.io/'>Swagger</a></li>
               <li><a href='https://facebook.github.io/immutable-js/'>Immutable JS</a> with <a
                 href='https://github.com/rangle/typed-immutable-record'>typed-immutable-record</a> and <a
@@ -87,7 +88,6 @@ export class Home extends React.Component<HomeProps, HomeState> {
               <li><a href='http://redux.js.org/'>Redux</a> with <a href='https://redux-observable.js.org/'>redux-observable</a>
                 and <a href='https://github.com/piotrwitek/react-redux-typescript'>react-redux-typescript</a></li>
               <li><a href='http://visjs.org/'>Vis.js</a></li>
-              <li><a href='https://necolas.github.io/normalize.css/'>normalize.css</a></li>
               <li><a href='https://github.com/reactjs/reselect'>reselect</a></li>
               <li><a href='https://github.com/JedWatson/classnames'>classnames</a></li>
               <li><a href='http://lesscss.org/'>Less CSS</a></li>
@@ -111,7 +111,7 @@ export class Home extends React.Component<HomeProps, HomeState> {
               <li>Scales to thousands of nodes/edges with hundreds updated per second</li>
               <li>StatusBar displayed above network chart</li>
               <li>ListView of all nodes with filter on label</li>
-              <li>Detail view of currently selected node</li>
+              <li>Detail view of currently selected node updated in real time</li>
               <li>WebSocket auto-reconnects when online</li>
               <li>swagger.json hyperlink (all served with CORS headers)</li>
               <li>Tech Stack displayed in modal</li>

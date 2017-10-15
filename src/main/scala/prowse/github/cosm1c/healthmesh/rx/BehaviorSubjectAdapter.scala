@@ -1,4 +1,4 @@
-package prowse.github.cosm1c.healthmesh.faststart
+package prowse.github.cosm1c.healthmesh.rx
 
 import akka.NotUsed
 import akka.stream.scaladsl.{Keep, Sink, Source, SourceQueueWithComplete}
@@ -6,7 +6,7 @@ import akka.stream.{Materializer, OverflowStrategy}
 import rx.RxReactiveStreams
 import rx.subjects.{BehaviorSubject, PublishSubject}
 
-class BehaviorBroadcast[A, B](z: B, op: (B, A) => B)(implicit materializer: Materializer) {
+class BehaviorSubjectAdapter[A, B](z: B, op: (B, A) => B)(implicit materializer: Materializer) {
 
     private val in: PublishSubject[A] = PublishSubject.create()
     private val out: BehaviorSubject[B] = BehaviorSubject.create(z)

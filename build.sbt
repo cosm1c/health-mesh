@@ -96,7 +96,7 @@ packageBin in Compile := (packageBin in Compile dependsOn buildJs).value
 
 //Warts.unsafe only to avoid false positives
 wartremoverErrors ++= List(
-  // TODO: use Any when switched to typed Akka
+  // TODO: use Wart.Any when switched to typed Akka
   //  Wart.Any,
   Wart.AsInstanceOf,
   //  Wart.DefaultArguments,

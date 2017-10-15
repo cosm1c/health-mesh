@@ -13,9 +13,7 @@ gulp.task('default', function (cb) {
 });
 
 gulp.task('clean', function (cb) {
-  const rimraf = require("rimraf");
-
-  rimraf('../target/classes/ui', cb);
+  require("rimraf")('../target/classes/ui', cb);
 });
 
 gulp.task('test', function (done) {
@@ -29,7 +27,8 @@ gulp.task('package', ['clean', 'test'], function (cb) {
   webpack(webpackConfig, function (err, stats) {
     // see: https://webpack.github.io/docs/node.js-api.html#stats-tostring
     gutil.log("[webpack stats]", stats.toString());
-    if (err || stats.hasErrors()) throw err;
+    if (err) throw err;
+    if (stats.hasErrors()) throw 'Webpack failed to compile';
     cb();
   });
 });
@@ -42,7 +41,7 @@ gulp.task("webpack-dev-server", ['clean'], function (cb) {
   new WebpackDevServer(webpack(devWebpackConfig))
     .listen(9090, "localhost", function (err) {
       if (err) throw err;
-      gutil.log(gutil.colors.inverse("[webpack-dev-server]", "http://localhost:9090/webpack-dev-server/index.html"));
+      gutil.log("[webpack-dev-server]", gutil.colors.inverse("http://localhost:9090/webpack-dev-server/index.html"));
       cb();
     });
 });

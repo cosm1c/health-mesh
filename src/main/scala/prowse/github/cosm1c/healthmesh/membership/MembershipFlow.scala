@@ -3,7 +3,7 @@ package prowse.github.cosm1c.healthmesh.membership
 import akka.stream.Materializer
 import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent
 import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent.{ExampleAgentId, ExampleAgentUpdate}
-import prowse.github.cosm1c.healthmesh.faststart.BehaviorBroadcast
+import prowse.github.cosm1c.healthmesh.rx.BehaviorSubjectAdapter
 import prowse.github.cosm1c.healthmesh.membership.MembershipFlow.{MembershipCommand, MembershipDelta}
 
 object MembershipFlow {
@@ -24,8 +24,8 @@ object MembershipFlow {
 
 class MembershipFlow()(implicit materializer: Materializer) {
 
-    val behaviourBroadcast: BehaviorBroadcast[MembershipCommand[ExampleAgentUpdate], MembershipDelta[ExampleAgentUpdate]] =
-        new BehaviorBroadcast[MembershipCommand[ExampleAgent.ExampleAgentUpdate], MembershipDelta[ExampleAgent.ExampleAgentUpdate]](MembershipFlow.emptyMembershipDelta, updateState)
+    val behaviourBroadcast: BehaviorSubjectAdapter[MembershipCommand[ExampleAgentUpdate], MembershipDelta[ExampleAgentUpdate]] =
+        new BehaviorSubjectAdapter[MembershipCommand[ExampleAgent.ExampleAgentUpdate], MembershipDelta[ExampleAgent.ExampleAgentUpdate]](MembershipFlow.emptyMembershipDelta, updateState)
 
     private def updateState(lastUpdate: MembershipDelta[ExampleAgentUpdate], command: MembershipCommand[ExampleAgentUpdate]): MembershipDelta[ExampleAgentUpdate] = {
         val currRemoved = lastUpdate.members.keySet.intersect(command.remove -- command.upsert.keySet)

@@ -5,6 +5,7 @@ export const DISCONNECT_WEBSOCKET = 'DISCONNECT_WEBSOCKET';
 export const WEBSOCKET_CONNECTED = 'WEBSOCKET_CONNECTED';
 export const DELTA_PAYLOAD = 'DELTA_PAYLOAD';
 export const USER_COUNT_PAYLOAD = 'USER_COUNT_PAYLOAD';
+export const KEEPALIVE_PAYLOAD = 'KEEPALIVE_PAYLOAD';
 export const WEBSOCKET_DISCONNECTED = 'WEBSOCKET_DISCONNECTED';
 
 export type WebSocketActions = {
@@ -13,6 +14,7 @@ export type WebSocketActions = {
   WEBSOCKET_CONNECTED: { type: typeof WEBSOCKET_CONNECTED, date: Date },
   DELTA_PAYLOAD: { type: typeof DELTA_PAYLOAD, payload: NodeDeltasJson },
   USER_COUNT_PAYLOAD: { type: typeof USER_COUNT_PAYLOAD, count: number },
+  KEEPALIVE_PAYLOAD: { type: typeof KEEPALIVE_PAYLOAD },
   WEBSOCKET_DISCONNECTED: { type: typeof WEBSOCKET_DISCONNECTED, date: Date },
 };
 
@@ -38,6 +40,9 @@ export const actionCreators = {
   deltaPayload: (payload: NodeDeltasJson) => ({
     type: DELTA_PAYLOAD as typeof DELTA_PAYLOAD,
     payload,
+  }),
+  keepAlivePayload: () => ({
+    type: KEEPALIVE_PAYLOAD as typeof KEEPALIVE_PAYLOAD,
   }),
   userCountPayload: (count: number) => ({
     type: USER_COUNT_PAYLOAD as typeof USER_COUNT_PAYLOAD,

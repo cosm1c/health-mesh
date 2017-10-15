@@ -174,7 +174,8 @@ class ExampleAgent(private var config: ExampleConfig, outQueue: SourceQueueWithC
                                 ))))
                 .onComplete({
                     case Success(queueOfferResult) => queueOfferResult match {
-                        case Enqueued => scheduleNextPoll()
+                        case Enqueued =>
+                            scheduleNextPoll()
 
                         case QueueFailure(cause) =>
                             log.error(cause, "Failed to enqueue websocket message - Failure")
