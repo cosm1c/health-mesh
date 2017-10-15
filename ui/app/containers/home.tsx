@@ -50,9 +50,11 @@ export class Home extends React.Component<HomeProps, HomeState> {
               <Navbar.Brand>Health Mesh</Navbar.Brand>
             </Navbar.Header>
             <Nav pullRight={true}>
-              <NavItem eventKey={1} href='#' onClick={this.openTechStackModal}>TechStack</NavItem>
+              {/* See: https://github.com/react-bootstrap/react-bootstrap/issues/2812
+              <NavItem eventKey={1} href='#' onClick={this.openTechStackModal}>TechStack</NavItem>*/}
               <NavItem eventKey={2} href='/api-docs/swagger.json' target={'_blank'}>/api-docs/swagger.json</NavItem>
-              <NavItem eventKey={3} href='#' onClick={this.openAboutModal}>About</NavItem>
+              {/* See: https://github.com/react-bootstrap/react-bootstrap/issues/2812
+              <NavItem eventKey={3} href='#' onClick={this.openAboutModal}>About</NavItem>*/}
             </Nav>
           </Navbar>
         </Col>
