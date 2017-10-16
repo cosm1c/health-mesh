@@ -56,7 +56,7 @@ export const NodeDetailView: React.StatelessComponent<NodeDetailViewOwnProps & N
       <tr>
         <th>Result</th>
         <td>
-          <pre>{selectedNode.lastPollResult}</pre>
+          <pre>{JSON.stringify(selectedNode.lastPollResult, null, '  ')}</pre>
         </td>
       </tr>
       }

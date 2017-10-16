@@ -35,7 +35,7 @@ interface DigraphState {
 
 const flashDuration = 300;
 
-function nodeInfoFor(payload: NodeDeltasJson, updateType: string): Array<GraphNode> {
+function nodeInfoFor(payload: NodeDeltasJson, updateType: string, shadow: boolean): Array<GraphNode> {
   const updates = payload[updateType];
   return Object.keys(updates).map(id => {
     const nodeInfoRecord: NodeInfoRecord = updates[id];
@@ -45,7 +45,7 @@ function nodeInfoFor(payload: NodeDeltasJson, updateType: string): Array<GraphNo
       label: nodeInfoRecord.label,
       color: backgroundColor,
       border: borderColor,
-      shadow: true,
+      shadow: shadow,
     };
   });
 }
@@ -138,8 +138,8 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
             .get({filter: item => removedIdsSet.has(item.from as string) || removedIdsSet.has(item.to as string)})
             .map(i => i.id!));
         this.nodes.remove(action.payload.removed);
-        this.nodes.update(nodeInfoFor(action.payload, 'added'));
-        this.nodes.update(nodeInfoFor(action.payload, 'updated'));
+        this.nodes.update(nodeInfoFor(action.payload, 'added', !this.initializing));
+        this.nodes.update(nodeInfoFor(action.payload, 'updated', !this.initializing));
         this.edges.update(edgesFor(action.payload, 'added'));
         this.edges.update(edgesFor(action.payload, 'updated'));
 

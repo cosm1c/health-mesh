@@ -5,7 +5,7 @@ export interface NodeStateJson {
   readonly healthStatus: string;
   readonly lastPollInstant?: number;
   readonly lastPollDurationMillis?: number;
-  readonly lastPollResult?: string;
+  readonly lastPollResult?: any;
 }
 
 export interface NodeCollectionJson {
