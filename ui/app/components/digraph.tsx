@@ -231,8 +231,8 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
         <Label bsStyle='info'>Edges: {this.edges.length}</Label>
       </Panel>
 
-      <div className={'digraph-inner'}>
-        <div className={'digraph-controls'}>
+      <div className='digraph-inner'>
+        <div className='digraph-controls'>
           <NodeDetailView className='digraph-detailview'
                           selectedNode={this.state.selection.length > 0 ? index.get(this.state.selection[0]) : undefined}/>
           <ListView className='digraph-listview'
@@ -242,7 +242,7 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
                     nodeInfoRecordMap={index}/>
         </div>
 
-        <div className={'digraph-network'} ref={(divEl) => divEl ? this.networkEl = divEl : null}/>
+        <div className='digraph-network' ref={(divEl) => divEl ? this.networkEl = divEl : null}/>
       </div>
     </div>);
   }
