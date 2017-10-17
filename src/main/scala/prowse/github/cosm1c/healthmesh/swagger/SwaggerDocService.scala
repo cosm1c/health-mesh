@@ -1,14 +1,12 @@
 package prowse.github.cosm1c.healthmesh.swagger
 
-import akka.actor.ActorSystem
 import com.github.swagger.akka._
 import com.github.swagger.akka.model.Info
 import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolRestService
 
-class SwaggerDocService(system: ActorSystem) extends SwaggerHttpService {
+class SwaggerDocService(override val basePath: String) extends SwaggerHttpService {
     override val apiClasses = Set(classOf[AgentPoolRestService])
     //override val host = "localhost:12345"
-    //override val basePath = "/"
     override val info = Info(
         title = "health-mesh",
         //version = "",

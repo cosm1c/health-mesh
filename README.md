@@ -42,7 +42,7 @@ Terminal 1 - start Akka HTTP Server:
 
 Terminal 2 - start WebPack Dev Server:
 
-    npm run webpack-dev-server
+    npm run dev-server
 
 
 ## SBT Release Command ##
@@ -58,7 +58,7 @@ Terminal 1 - start Akka HTTP Server:
 
 Terminal 2 - start WebPack Dev Server:
 
-    npm run webpack-dev-server
+    npm run dev-server
 
 
 ## Maven Release Command ##

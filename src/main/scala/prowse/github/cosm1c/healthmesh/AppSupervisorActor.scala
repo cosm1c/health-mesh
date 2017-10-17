@@ -143,9 +143,9 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
                                     getFromResource("ui/" + filePath.toString)
                                 }
                         } ~
-                        agentPoolService.route
-                } ~
-                    new SwaggerDocService(actorSystem).routes
+                        agentPoolService.route ~
+                        new SwaggerDocService(httpPathPrefix).routes
+                }
             } ~
                 pathEndOrSingleSlash {
                     redirectRoot

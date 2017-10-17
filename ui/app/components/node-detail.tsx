@@ -25,7 +25,7 @@ export const NodeDetailView: React.StatelessComponent<NodeDetailViewOwnProps & N
       <tbody>
       <tr>
         <td colSpan={2}><Button onClick={() => fetch(
-          `/health-mesh/agents/pollNow/${selectedNode.id}`,
+          `./agents/pollNow/${selectedNode.id}`,
           {method: 'POST'})}>Poll Now</Button></td>
       </tr>
       <tr>

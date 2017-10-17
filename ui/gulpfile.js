@@ -6,7 +6,6 @@ const gulp = require('gulp'),
 gulp.task('default', function (cb) {
   gutil.log('Tasks are:');
   gutil.log('\tclean');
-  gutil.log('\twebpack-dev-server');
   gutil.log('\ttest');
   gutil.log('\tpackage');
   cb();
@@ -31,17 +30,4 @@ gulp.task('package', ['clean', 'test'], function (cb) {
     if (stats.hasErrors()) throw 'Webpack failed to compile';
     cb();
   });
-});
-
-gulp.task("webpack-dev-server", ['clean'], function (cb) {
-  const webpack = require('webpack'),
-    WebpackDevServer = require("webpack-dev-server"),
-    devWebpackConfig = require("./webpack.dev.config.js");
-
-  new WebpackDevServer(webpack(devWebpackConfig))
-    .listen(9090, "localhost", function (err) {
-      if (err) throw err;
-      gutil.log("[webpack-dev-server]", gutil.colors.inverse("http://localhost:9090/webpack-dev-server/index.html"));
-      cb();
-    });
 });

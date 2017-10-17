@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 object ClientWebSocketFlow extends ExampleAgent.JsonSupport {
 
-    private val keepAlive: String = ""
+    private val keepAlive: String = "{}"
 
     def clientWebSocketFlow(counterSource: Source[Int, NotUsed],
                             deltaSource: Source[MembershipFlow.MembershipDelta[ExampleAgent.ExampleAgentUpdate], NotUsed]): Flow[Any, TextMessage.Strict, NotUsed] = {

@@ -24,8 +24,8 @@ module.exports = {
 
   output: {
     filename: '[name].js',
-    path: path.resolve(__dirname, 'dist', 'ui'),
-    publicPath: '/'
+    // path: path.resolve(__dirname, 'dist', 'ui'),
+    publicPath: '/health-mesh/'
   },
 
   module: {
@@ -112,18 +112,15 @@ module.exports = {
 
   devServer: {
     proxy: {
-      '/health-mesh': {
-        target: 'http://localhost:18080',
-        changeOrigin: true/*,
-        secure: false*/
-      }
+      '/': 'http://localhost:18080'
     },
-    compress: true,
-    stats: true,
     host: 'localhost',
     port: 9090,
-    publicPath: '/',
-    contentBase: path.resolve(__dirname, 'dist'),
+    publicPath: 'http://localhost:9090/health-mesh/',
+    // contentBase: path.resolve(__dirname, 'dist'),
+    contentBase: false,
+    compress: true,
+    stats: true,
     hot: true
   },
 

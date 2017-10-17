@@ -52,7 +52,7 @@ export class Home extends React.Component<HomeProps, HomeState> {
             <Nav pullRight={true}>
               {/* See: https://github.com/react-bootstrap/react-bootstrap/issues/2812
               <NavItem eventKey={1} href='#' onClick={this.openTechStackModal}>TechStack</NavItem>*/}
-              <NavItem eventKey={2} href='/api-docs/swagger.json' target={'_blank'}>/api-docs/swagger.json</NavItem>
+              <NavItem eventKey={2} href='./api-docs/swagger.json' target={'_blank'}>/api-docs/swagger.json</NavItem>
               {/* See: https://github.com/react-bootstrap/react-bootstrap/issues/2812
               <NavItem eventKey={3} href='#' onClick={this.openAboutModal}>About</NavItem>*/}
             </Nav>
