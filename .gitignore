@@ -36,3 +36,4 @@ src_managed/
 .scala_dependencies
 .worksheet
 .DS_Store
+.cache-loader

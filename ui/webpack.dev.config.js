@@ -2,7 +2,8 @@
 
 const path = require('path'),
   webpack = require('webpack'),
-  HtmlWebpackPlugin = require('html-webpack-plugin');
+  HtmlWebpackPlugin = require('html-webpack-plugin'),
+  ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 
 const ENV = process.env.NODE_ENV = process.env.ENV = 'development';
 
@@ -93,8 +94,22 @@ module.exports = {
       },
       {
         test: /\.tsx?$/,
-        use: 'ts-loader',
-        exclude: /node_modules/
+        exclude: /node_modules/,
+        use: [
+          {loader: 'cache-loader'},
+          {
+            loader: 'thread-loader',
+            options: {
+              workers: require('os').cpus().length - 1
+            }
+          },
+          {
+            loader: 'ts-loader',
+            options: {
+              happyPackMode: true
+            }
+          }
+        ]
       }
     ]
   },
@@ -141,6 +156,7 @@ module.exports = {
       'process.env.NODE_ENV': JSON.stringify(ENV),
       IS_PROD: false
     }),
+    new ForkTsCheckerWebpackPlugin({checkSyntacticErrors: true}),
     new webpack.HotModuleReplacementPlugin(),
     new webpack.NamedModulesPlugin(),
     new HtmlWebpackPlugin({
