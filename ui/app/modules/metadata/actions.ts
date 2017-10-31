@@ -1,17 +1,17 @@
-import {NodeInfoRecordMap} from '../../immutable';
+import {ServicesRecordMap} from '../../immutable';
 
 export const INDEX_UPDATED = 'INDEX_UPDATED';
 export const USER_COUNT_UPDATED = 'USER_COUNT_UPDATED';
 
 export type MetadataActions = {
-  INDEX_UPDATED: { type: typeof INDEX_UPDATED, index: NodeInfoRecordMap; },
+  INDEX_UPDATED: { type: typeof INDEX_UPDATED, index: ServicesRecordMap; },
   USER_COUNT_UPDATED: { type: typeof USER_COUNT_UPDATED, count: number; },
 };
 
 export type MetadataAction = MetadataActions[keyof MetadataActions];
 
 export const actionCreators = {
-  indexUpdated: (index: NodeInfoRecordMap) => ({
+  indexUpdated: (index: ServicesRecordMap) => ({
     type: INDEX_UPDATED as typeof INDEX_UPDATED,
     index,
   }),

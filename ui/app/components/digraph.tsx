@@ -1,21 +1,19 @@
 import * as classNames from 'classnames';
 import * as React from 'react';
-import * as Immutable from 'immutable';
 import {connect} from 'react-redux';
 import {DataSet, Edge as GraphEdge, Network, Node as GraphNode} from 'vis';
-import {colorForHealth, NodeDeltasJson} from '../NodeInfo';
-import {NodeInfoRecordMap, WebSocketStateEnum} from '../immutable';
+import {ServicesRecordMap, WebSocketStateEnum} from '../immutable';
 import {ListView} from './';
 import {IRootStateRecord} from '../modules';
-import {webSocketActionSubject} from '../modules/websocket/epics';
-import {DELTA_PAYLOAD, WEBSOCKET_CONNECTED, WebSocketAction} from '../modules/websocket/actions';
+import {WEBSOCKET_CONNECTED, WebSocketAction} from '../modules/websocket/actions';
 import {getWebSocketStateEnum} from '../modules/websocket/selectors';
-import {NodeDetailView} from './node-detail';
+import {ServiceDetailView} from './service-detail';
 import {getMetadataIndex} from '../modules/root-selectors';
-import {NodeInfoRecord} from '../immutable/NodeInfoRecord';
 import {getUserCount} from '../modules/metadata/selectors';
 import {websocketStateDisplay} from '../immutable/WebSocketStateRecord';
 import {Label, Panel} from 'react-bootstrap';
+import {DigraphDelta, digraphDeltaSubject} from '../modules/digraph/DigraphSubject';
+import {webSocketActionSubject} from '../modules/websocket/epics';
 
 interface DigraphOwnProps {
   className?: string;
@@ -24,47 +22,12 @@ interface DigraphOwnProps {
 
 interface DigraphProps {
   socketState: WebSocketStateEnum;
-  index: NodeInfoRecordMap;
+  index: ServicesRecordMap;
   userCount: number;
 }
 
 interface DigraphState {
   selection: Array<string>;
-  recentlyUpdated: Immutable.Set<string>;
-}
-
-const flashDuration = 300;
-
-function nodeInfoFor(payload: NodeDeltasJson, updateType: string, shadow: boolean): Array<GraphNode> {
-  const updates = payload[updateType];
-  return Object.keys(updates).map(id => {
-    const nodeInfoRecord: NodeInfoRecord = updates[id];
-    const {backgroundColor, borderColor} = colorForHealth(nodeInfoRecord.healthStatus);
-    return {
-      id: id,
-      label: nodeInfoRecord.label,
-      color: backgroundColor,
-      border: borderColor,
-      shadow: shadow,
-    };
-  });
-}
-
-function arrayConcat<T>(a: Array<T>, b: Array<T>): Array<T> {
-  return a.concat(b);
-}
-
-function edgesFor(payload: NodeDeltasJson, updateType: string): Array<GraphEdge> {
-  const update = payload[updateType];
-  return Object.keys(update).map(from => {
-    return update[from].depends.map((to: string) => {
-      return {
-        id: `${from}-${to}`,
-        from: from,
-        to: to
-      };
-    });
-  }).reduce(arrayConcat, []);
 }
 
 class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnProps, DigraphState> {
@@ -74,18 +37,19 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
 
   private network: Network;
   private networkEl: HTMLDivElement;
-  private firstPacketReceived: boolean = false;
-  private initializing: boolean = true;
+  private timeout: number | null = null;
+  private firstPacketReceived = false;
 
   constructor(props: DigraphProps) {
     super(props);
     this.state = {
       selection: [],
-      recentlyUpdated: Immutable.Set<string>(),
     };
 
     this.receiveWebSocketAction = this.receiveWebSocketAction.bind(this);
     webSocketActionSubject.subscribe({next: this.receiveWebSocketAction});
+    this.receiveDigraphDelta = this.receiveDigraphDelta.bind(this);
+    digraphDeltaSubject.subscribe({next: this.receiveDigraphDelta});
   }
 
   componentDidMount() {
@@ -120,73 +84,40 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
   private selectionChanged = () =>
     this.changeSelection(this.network.getSelectedNodes() as Array<string>);
 
+  private autoFitDigraph() {
+    if (this.timeout) window.clearTimeout(this.timeout);
+    this.timeout = window.setTimeout(() => {
+      this.network.fit();
+    }, 1000);
+  }
+
   private receiveWebSocketAction(action: WebSocketAction) {
     switch (action.type) {
-
       case WEBSOCKET_CONNECTED:
-        this.edges.clear();
-        this.nodes.clear();
+        // this.edges.clear();
+        // this.nodes.clear();
+        // this.props.index.clear();
         this.firstPacketReceived = false;
-        this.initializing = true;
-        this.setState({recentlyUpdated: this.state.recentlyUpdated.clear()});
+        this.autoFitDigraph();
         break;
+    }
+  }
 
-      case DELTA_PAYLOAD:
-        const removedIdsSet: Immutable.Set<string> = Immutable.Set<string>(action.payload.removed);
-        this.edges.remove(
-          this.edges
-            .get({filter: item => removedIdsSet.has(item.from as string) || removedIdsSet.has(item.to as string)})
-            .map(i => i.id!));
-        this.nodes.remove(action.payload.removed);
-        this.nodes.update(nodeInfoFor(action.payload, 'added', !this.initializing));
-        this.nodes.update(nodeInfoFor(action.payload, 'updated', !this.initializing));
-        this.edges.update(edgesFor(action.payload, 'added'));
-        this.edges.update(edgesFor(action.payload, 'updated'));
+  private receiveDigraphDelta(delta: DigraphDelta) {
+    this.edges.remove(delta.removedEdges);
+    this.edges.remove(
+      this.edges
+        .get({filter: item => delta.removedNodes.has(item.from as string) || delta.removedNodes.has(item.to as string)})
+        .map(i => i.id!));
+    this.nodes.remove(Array.from(delta.removedNodes));
 
-        if (this.initializing) {
-          if (!this.firstPacketReceived) {
-            this.firstPacketReceived = true;
-            setTimeout(() => {
-              this.network.fit();
-              this.initializing = false;
-            }, 250);
-          }
+    this.nodes.update(delta.updated.nodes as GraphNode[]);
+    this.edges.update(delta.updated.edges as GraphEdge[]);
 
-        } else {
-          const addedAndUpdatedIds: Immutable.Set<string> = Immutable.Set<string>(
-            Object.keys(action.payload.updated).concat(Object.keys(action.payload.added)));
-
-          const newRecentlyUpdated = this.state.recentlyUpdated.withMutations(mutable => {
-            action.payload.removed.forEach(id => mutable.delete(id));
-            addedAndUpdatedIds.forEach(id => mutable.add(id!));
-          });
-          if (newRecentlyUpdated !== this.state.recentlyUpdated) {
-            this.setState({recentlyUpdated: newRecentlyUpdated});
-          }
-
-          setTimeout(() => {
-            const oldestFlashInstant = Date.now() - flashDuration;
-            const {index} = this.props;
-            const {recentlyUpdated} = this.state;
-
-            const culledRecent = recentlyUpdated.withMutations(mutable => {
-              addedAndUpdatedIds
-                .filter(id => oldestFlashInstant >= index.get(id!).lastUpdatedInstant)
-                .forEach(id => {
-                  mutable.delete(id!);
-                  this.nodes.update({
-                    id: id,
-                    shadow: false
-                  } as GraphNode);
-                });
-            });
-            if (culledRecent !== recentlyUpdated) {
-              this.setState({recentlyUpdated: culledRecent});
-            }
-
-          }, flashDuration);
-        }
-        break;
+    if (!this.firstPacketReceived) {
+      this.firstPacketReceived = true;
+      this.network.fit();
+      this.autoFitDigraph();
     }
   }
 
@@ -229,16 +160,20 @@ class NetworkDigraphComponent extends React.Component<DigraphProps & DigraphOwnP
         <Label bsStyle='info'>User Count: {userCount}</Label>
         <Label bsStyle='info'>Nodes: {this.nodes.length}</Label>
         <Label bsStyle='info'>Edges: {this.edges.length}</Label>
+        <Label bsStyle='info'>Instances: {
+          index.valueSeq()
+            .map(serviceInfo => serviceInfo!.instances.size)
+            .reduce((a, b) => a! + b!, 0)
+        }</Label>
       </Panel>
 
       <div className='digraph-inner'>
         <div className='digraph-controls'>
-          <NodeDetailView className='digraph-detailview'
-                          selectedNode={this.state.selection.length > 0 ? index.get(this.state.selection[0]) : undefined}/>
+          <ServiceDetailView className='digraph-detailview'
+                             selectedNode={this.state.selection.length > 0 ? index.get(this.state.selection[0]) : undefined}/>
           <ListView className='digraph-listview'
                     changeSelection={this.changeSelection}
                     selection={this.state.selection}
-                    recentlyUpdated={this.state.recentlyUpdated}
                     nodeInfoRecordMap={index}/>
         </div>
 

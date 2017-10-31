@@ -1,8 +1,7 @@
 import * as React from 'react';
-import * as Immutable from 'immutable';
-import {NodeInfoRecord, NodeInfoRecordMap} from '../immutable';
+import {ServiceInfoRecord, ServicesRecordMap} from '../immutable';
 import {FormControl, FormGroup, InputGroup, ListGroup, ListGroupItem} from 'react-bootstrap';
-import {bsStyleForHealth} from '../NodeInfo';
+import {bsStyleForHealth} from '../WebSocketJson';
 
 interface ListViewOwnProps {
   className?: string;
@@ -10,10 +9,9 @@ interface ListViewOwnProps {
 }
 
 interface ListViewProps {
-  nodeInfoRecordMap: NodeInfoRecordMap;
+  nodeInfoRecordMap: ServicesRecordMap;
   selection: Array<string>;
   changeSelection: (ids: Array<string>) => void;
-  recentlyUpdated: Immutable.Set<string>;
 }
 
 interface ListViewState {
@@ -37,12 +35,12 @@ export class ListView extends React.Component<ListViewProps & ListViewOwnProps, 
     });
   };
 
-  private filterPredicate = (entry: NodeInfoRecord): boolean => {
-    return entry.label.search(this.state.labelFilterRegexp) >= 0;
+  private filterPredicate = (entry: ServiceInfoRecord): boolean => {
+    return entry.serviceName.search(this.state.labelFilterRegexp) >= 0;
   };
 
-  private static compareByLabel(a: NodeInfoRecord, b: NodeInfoRecord) {
-    return a.label.localeCompare(b.label);
+  private static compareByLabel(a: ServiceInfoRecord, b: ServiceInfoRecord) {
+    return a.serviceName.localeCompare(b.serviceName);
   }
 
   private static isNodeSelected(id: string, selection: Array<string>): boolean {
@@ -67,14 +65,10 @@ export class ListView extends React.Component<ListViewProps & ListViewOwnProps, 
         nodeInfoRecordMap.valueSeq()
           .filter(this.filterPredicate)
           .sort(ListView.compareByLabel)
-          .map(o =>
-            <ListGroupItem key={o!.id} bsStyle={bsStyleForHealth(o!.healthStatus)}
-                           active={ListView.isNodeSelected(o!.id, selection)}
-                           onClick={() => changeSelection([o!.id])}>{o!.label}</ListGroupItem>)
-        /*
-          TODO: UX for recentlyUpdate
-          recentlyUpdate={this.props.recentlyUpdated.has(o!.id)}
-        */
+          .map(o => o &&
+            <ListGroupItem key={o.serviceName} bsStyle={bsStyleForHealth(o.healthStatus)}
+                           active={ListView.isNodeSelected(o.serviceName, selection)}
+                           onClick={() => changeSelection([o.serviceName])}>{o.serviceName}</ListGroupItem>)
       }</ListGroup>
     </div>);
   }

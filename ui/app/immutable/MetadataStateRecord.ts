@@ -1,8 +1,8 @@
 import {makeTypedFactory, TypedRecord} from 'typed-immutable-record';
-import {EMPTY_NODE_INFO_RECORD_MAP, NodeInfoRecordMap} from './NodeInfoRecord';
+import {EMPTY_SERVICES_RECORD_MAP, ServicesRecordMap} from './ServiceInfoRecord';
 
 interface IMetadataState {
-  readonly index: NodeInfoRecordMap;
+  readonly index: ServicesRecordMap;
   readonly userCount: number;
 }
 
@@ -10,7 +10,7 @@ export interface IMetadataStateRecord extends TypedRecord<IMetadataStateRecord>,
 }
 
 const defaultMetadata = {
-  index: EMPTY_NODE_INFO_RECORD_MAP,
+  index: EMPTY_SERVICES_RECORD_MAP,
   userCount: 0,
 };
 

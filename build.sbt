@@ -27,8 +27,8 @@ lazy val root = (project in file("."))
       "com.typesafe.akka" %% "akka-slf4j" % akkaVersion,
       "com.github.swagger-akka-http" %% "swagger-akka-http" % "0.11.0",
 
-      "io.reactivex" % "rxjava" % "1.3.2",
-      "io.reactivex" % "rxjava-reactive-streams" % "1.2.1",
+      "org.typelevel" %% "cats-core" % "1.0.0-MF",
+      "io.monix" %% "monix" % "2.3.0",
 
       "com.typesafe.scala-logging" %% "scala-logging" % "3.7.2",
       "ch.qos.logback" % "logback-classic" % "1.2.3" % Runtime,

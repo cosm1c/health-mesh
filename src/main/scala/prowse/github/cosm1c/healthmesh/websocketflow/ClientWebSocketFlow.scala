@@ -4,40 +4,31 @@ import akka.NotUsed
 import akka.http.scaladsl.model.ws.TextMessage
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.{Flow, Sink, Source}
-import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent
-import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent.{ExampleAgentWebsocketPayload, UserCount, conflateExampleAgentWebsocketPayload}
-import prowse.github.cosm1c.healthmesh.membership.MembershipFlow
+import prowse.github.cosm1c.healthmesh.agentpool.NodeMonitorActor.NodeState
+import prowse.github.cosm1c.healthmesh.flows.MapDeltaFlow.MapDelta
 
 import scala.concurrent.duration._
 
-object ClientWebSocketFlow extends ExampleAgent.JsonSupport {
+object ClientWebSocketFlow extends WebSocketJsonSupport {
 
-    private val keepAlive: String = "{}"
+    private final val keepAlive: String = "{}"
 
-    def clientWebSocketFlow(counterSource: Source[Int, NotUsed],
-                            deltaSource: Source[MembershipFlow.MembershipDelta[ExampleAgent.ExampleAgentUpdate], NotUsed]): Flow[Any, TextMessage.Strict, NotUsed] = {
+    final case class UserCountPacket(userCount: Int)
 
-        val deltaFlow = deltaSource
-            .prefixAndTail(1)
-            .flatMapConcat { case (head, tail) =>
-                Source.single(
-                    ExampleAgentWebsocketPayload(
-                        added = head.headOption.map(_.members).getOrElse(Map.empty),
-                        updated = Map.empty,
-                        removed = Set.empty)
-                ) ++ tail.map(membershipDelta =>
-                    ExampleAgentWebsocketPayload(
-                        added = membershipDelta.added,
-                        updated = membershipDelta.updated,
-                        removed = membershipDelta.removed))
-            }
-            .conflate(conflateExampleAgentWebsocketPayload)
-            .map(exampleAgentWebsocketPayloadFormat.write(_).compactPrint)
+    final case class MapDeltaPacket(delta: MapDelta[String, NodeState])
 
-        val userCountFlow = counterSource
-            .conflate(_ + _)
-            .map(UserCount)
-            .map(userCountFormat.write(_).compactPrint)
+    def clientWebSocketFlow(countSource: Source[Int, NotUsed],
+                            deltaSource: Source[MapDelta[String, NodeState], NotUsed]): Flow[Any, TextMessage.Strict, NotUsed] = {
+
+        val deltaFlow =
+            deltaSource
+                .map(MapDeltaPacket)
+                .map(mapDeltaPacketFormat.write(_).compactPrint)
+
+        val userCountFlow =
+            countSource
+                .map(UserCountPacket)
+                .map(userCountPacketFormat.write(_).compactPrint)
 
         Flow.fromSinkAndSourceCoupled(
             Sink.ignore, // TODO: disconnect on unexpected data from remote websocket?

@@ -1,5 +1,4 @@
 import {Observable} from 'rxjs/Observable';
-import {Subject} from 'rxjs/Subject';
 import {WebSocketSubject, WebSocketSubjectConfig} from 'rxjs/observable/dom/WebSocketSubject';
 import 'rxjs/add/observable/timer';
 import 'rxjs/add/observable/fromEvent';
@@ -10,13 +9,13 @@ import 'rxjs/add/operator/switchMap';
 import 'rxjs/add/operator/take';
 import 'rxjs/add/operator/takeUntil';
 import {combineEpics, Epic} from 'redux-observable';
-import {actionCreators, CONNECT_WEBSOCKET, DISCONNECT_WEBSOCKET} from './';
+import {actionCreators, CONNECT_WEBSOCKET, DISCONNECT_WEBSOCKET, WebSocketAction} from './';
 import {IRootAction, IRootStateRecord} from '../../modules';
-import {NodeDeltasJson, UserCountJson} from '../../NodeInfo';
+import {MapDeltaPacket, UserCountPacket} from '../../WebSocketJson';
 import store from '../../store';
-import {WebSocketAction} from './actions';
 import {epic$} from '../root-epic';
 import 'rxjs/add/operator/filter';
+import {Subject} from "rxjs/Subject";
 
 // Used by DefinePlugin
 declare const IS_PROD: string;
@@ -65,18 +64,16 @@ function calcWsUrl(): Promise<string> {
   });
 }
 
-type WebSocketPayloadType = NodeDeltasJson | UserCountJson;
+type WebSocketPayloadType = MapDeltaPacket | UserCountPacket;
 
-function isUserCount(payload: WebSocketPayloadType): payload is UserCountJson {
-  const userCountJson = (<UserCountJson>payload);
+function isUserCount(payload: WebSocketPayloadType): payload is UserCountPacket {
+  const userCountJson = (<UserCountPacket>payload);
   return userCountJson.userCount !== undefined;
 }
 
-function isDelta(payload: WebSocketPayloadType): payload is NodeDeltasJson {
-  const nodeDeltasJson = (<NodeDeltasJson>payload);
-  return nodeDeltasJson.added !== undefined ||
-    nodeDeltasJson.removed !== undefined ||
-    nodeDeltasJson.updated !== undefined;
+function isDelta(payload: WebSocketPayloadType): payload is MapDeltaPacket {
+  const nodeDeltasJson = (<MapDeltaPacket>payload);
+  return nodeDeltasJson.delta !== undefined;
 }
 
 const eventualSocket: Promise<WebSocketSubject<WebSocketPayloadType>> =
@@ -96,9 +93,7 @@ const eventualSocket: Promise<WebSocketSubject<WebSocketPayloadType>> =
         closeObserver: {
           next: () => {
             console.info(`[${new Date().toISOString()}] WebSocket disconnected`);
-            const action = actionCreators.websocketDisconnected();
-            webSocketActionSubject.next(action);
-            return store.dispatch(action);
+            return store.dispatch(actionCreators.websocketDisconnected());
           }
         },
       };
@@ -125,16 +120,13 @@ eventualSocket.then(socket => {
           .takeUntil(action$.ofType(DISCONNECT_WEBSOCKET))
           .map(payload => {
             if (isDelta(payload)) {
-              return actionCreators.deltaPayload(payload);
+              return actionCreators.deltaPayload(payload.delta);
             }
             if (isUserCount(payload)) {
               return actionCreators.userCountPayload(payload.userCount);
             }
+            // TODO: verify is keepAlive packet (Object.keys(obj).length === 0 && obj.constructor === Object)
             return actionCreators.keepAlivePayload();
-          })
-          .map(action => {
-            webSocketActionSubject.next(action);
-            return action;
           })
       );
 

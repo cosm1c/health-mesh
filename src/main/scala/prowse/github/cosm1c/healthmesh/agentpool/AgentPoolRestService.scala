@@ -10,10 +10,12 @@ import akka.pattern.ask
 import akka.stream.Materializer
 import akka.util.Timeout
 import io.swagger.annotations._
-import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor.{AgentPollNow, FetchAgentConfig, ListAgents, PostAgentRequest, RemoveAgent, UpdateAgentConfig}
+import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor.{AgentPollNow, FetchAgentConfig, ListAgents, MembershipDelta}
 import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolRestService.{AgentDeletedResponse, AgentNotFoundResponse}
-import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent.{ExampleConfig, ExampleRequestPayload, ExampleResponsePayload}
+import prowse.github.cosm1c.healthmesh.agentpool.NodeMonitorActor.NodeDetails
+import prowse.github.cosm1c.healthmesh.flows.MapDeltaFlow.MapDelta
 import prowse.github.cosm1c.healthmesh.util.ReplyStatus
+import prowse.github.cosm1c.healthmesh.websocketflow.WebSocketJsonSupport
 
 import scala.concurrent.duration._
 import scala.util.{Failure, Success, Try}
@@ -29,14 +31,13 @@ object AgentPoolRestService {
 
 @Api(value = "/agents", produces = "application/json")
 @Path("/agents")
-class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materializer) extends Directives with ExampleAgent.JsonSupport {
+class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materializer) extends Directives with WebSocketJsonSupport {
 
     private implicit val timeout: Timeout = Timeout(1.second)
 
     val route: Route =
         pathPrefix("agents") {
-            postAgentMessage ~
-                putAgentConfig ~
+            putAgentConfig ~
                 delAgent ~
                 listAgents ~
                 getAgentConfig ~
@@ -54,17 +55,17 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
             }
         }
 
-    @ApiOperation(value = "Create or Update an Agent with supplied config", httpMethod = "PUT", response = classOf[ExampleConfig])
+    @ApiOperation(value = "Create or Update an Agent with supplied config", httpMethod = "PUT", response = classOf[NodeDetails])
     @ApiImplicitParams(Array(
         new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataTypeClass = classOf[String], paramType = "path"),
-        new ApiImplicitParam(name = "agentConfig", value = "Agent config", required = true, dataTypeClass = classOf[ExampleConfig], paramType = "body")
+        new ApiImplicitParam(name = "agentConfig", value = "Agent config", required = true, dataTypeClass = classOf[NodeDetails], paramType = "body")
     ))
     @Path("/{agentId}")
     def putAgentConfig: Route =
         put {
             path(RemainingPath) { agentPath =>
-                entity(as[ExampleConfig]) { agentConfig =>
-                    val eventualStatus = (agentPoolActor ? UpdateAgentConfig(agentPath.toString(), agentConfig)).mapTo[Try[ExampleConfig]]
+                entity(as[NodeDetails]) { agentConfig =>
+                    val eventualStatus = (agentPoolActor ? MembershipDelta(MapDelta(Map[String, NodeDetails](agentPath.toString() -> agentConfig)))).mapTo[Try[NodeDetails]]
                     onSuccess(eventualStatus) {
 
                         case Success(updatedAgentConfig) => complete(updatedAgentConfig)
@@ -75,7 +76,7 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
             }
         }
 
-    @ApiOperation(value = "Fetch Agent config", httpMethod = "GET", response = classOf[ExampleConfig])
+    @ApiOperation(value = "Fetch Agent config", httpMethod = "GET", response = classOf[NodeDetails])
     @ApiImplicitParams(Array(
         new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataTypeClass = classOf[String], paramType = "path")
     ))
@@ -83,7 +84,7 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
     def getAgentConfig: Route =
         get {
             path(RemainingPath) { agentPath =>
-                val eventualStatus = (agentPoolActor ? FetchAgentConfig(agentPath.toString())).mapTo[Option[Try[ExampleConfig]]]
+                val eventualStatus = (agentPoolActor ? FetchAgentConfig(agentPath.toString())).mapTo[Option[Try[NodeDetails]]]
                 onSuccess(eventualStatus) {
 
                     case Some(Success(agentConfig)) => complete(agentConfig)
@@ -95,7 +96,7 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
             }
         }
 
-    @ApiOperation(value = "Delete Agent", httpMethod = "DELETE", response = classOf[ExampleConfig])
+    @ApiOperation(value = "Delete Agent", httpMethod = "DELETE", response = classOf[NodeDetails])
     @ApiImplicitParams(Array(
         new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataTypeClass = classOf[String], paramType = "path")
     ))
@@ -103,29 +104,12 @@ class AgentPoolRestService(agentPoolActor: ActorRef)(implicit val mat: Materiali
     def delAgent: Route =
         delete {
             path(RemainingPath) { agentPath =>
-                val eventualStatus = (agentPoolActor ? RemoveAgent(agentPath.toString())).mapTo[Try[Done]]
+                val eventualStatus = (agentPoolActor ? MembershipDelta(MapDelta(removed = Set(agentPath.toString)))).mapTo[Try[Done]]
                 onSuccess(eventualStatus) {
 
                     case Success(_) => AgentDeletedResponse
 
                     case Failure(cause) => failWith(cause)
-                }
-            }
-        }
-
-    @ApiOperation(value = "Send message to Agent", httpMethod = "POST")
-    @ApiImplicitParams(Array(
-        new ApiImplicitParam(name = "agentId", value = "Id of the agent", required = true, dataTypeClass = classOf[String], paramType = "path"),
-        new ApiImplicitParam(name = "message", value = "Message to send to agent actor", paramType = "body", dataTypeClass = classOf[ExampleRequestPayload])
-    ))
-    @Path("/{agentId}")
-    def postAgentMessage: Route =
-        post {
-            path(RemainingPath) { agentPath =>
-                entity(as[ExampleRequestPayload]) { exampleRequest =>
-                    complete {
-                        (agentPoolActor ? PostAgentRequest(agentPath.toString(), exampleRequest)).mapTo[ExampleResponsePayload]
-                    }
                 }
             }
         }

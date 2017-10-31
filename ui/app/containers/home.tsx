@@ -6,7 +6,7 @@ interface HomeProps {
 }
 
 interface HomeState {
-  showTechStackModal: boolean;
+  showTechnologiesModal: boolean;
   showAboutModal: boolean;
 }
 
@@ -15,7 +15,7 @@ export class Home extends React.Component<HomeProps, HomeState> {
   constructor(props: HomeProps) {
     super(props);
     this.state = {
-      showTechStackModal: false,
+      showTechnologiesModal: false,
       showAboutModal: false,
     };
     this.openTechnologiesModal = this.openTechnologiesModal.bind(this);
@@ -25,11 +25,11 @@ export class Home extends React.Component<HomeProps, HomeState> {
   }
 
   openTechnologiesModal() {
-    this.setState({showTechStackModal: true});
+    this.setState({showTechnologiesModal: true});
   }
 
   closeTechnologiesModal() {
-    this.setState({showTechStackModal: false});
+    this.setState({showTechnologiesModal: false});
   }
 
   openAboutModal() {
@@ -58,7 +58,7 @@ export class Home extends React.Component<HomeProps, HomeState> {
         </Col>
       </Row>
 
-      <Modal show={this.state.showTechStackModal} onHide={this.closeTechnologiesModal}>
+      <Modal show={this.state.showTechnologiesModal} onHide={this.closeTechnologiesModal}>
         <Modal.Header closeButton>
           <Modal.Title>Technologies</Modal.Title>
         </Modal.Header>
@@ -101,8 +101,6 @@ export class Home extends React.Component<HomeProps, HomeState> {
                   3</a></li>
               </ul>
             </li>
-
-
           </ul>
         </Modal.Body>
         <Modal.Footer>

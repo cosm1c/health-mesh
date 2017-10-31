@@ -11,69 +11,26 @@ import akka.http.scaladsl.server.Directives._
 import akka.http.scaladsl.server.PathMatchers.RemainingPath
 import akka.http.scaladsl.server.Route
 import akka.http.scaladsl.{Http, HttpsConnectionContext}
-import akka.pattern.ask
-import akka.stream.ActorMaterializer
 import akka.stream.QueueOfferResult.{Dropped, Enqueued, QueueClosed, Failure => QueueFailure}
-import akka.util.Timeout
+import akka.stream.scaladsl.{Keep, Source}
+import akka.stream.{ActorMaterializer, OverflowStrategy}
 import com.typesafe.config.ConfigFactory
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor.{BatchAgentUpdates, UpdateAgentConfig}
-import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent._
-import prowse.github.cosm1c.healthmesh.agentpool.{AgentPoolActor, AgentPoolRestService, ExampleAgent}
-import prowse.github.cosm1c.healthmesh.membership.MembershipFlow
-import prowse.github.cosm1c.healthmesh.rx.BehaviorSubjectAdapter
+import monix.execution.Scheduler.Implicits.global
+import prowse.github.cosm1c.healthmesh.agentpool.NodeMonitorActor._
+import prowse.github.cosm1c.healthmesh.agentpool.{AgentPoolActor, AgentPoolRestService, NodeMonitorActor}
+import prowse.github.cosm1c.healthmesh.demo.DemoMembershipActor
+import prowse.github.cosm1c.healthmesh.flows.MapDeltaFlow.{MapDelta, _}
+import prowse.github.cosm1c.healthmesh.flows.{DeltaFlow, MonoidFlow}
 import prowse.github.cosm1c.healthmesh.swagger.SwaggerDocService
 import prowse.github.cosm1c.healthmesh.websocketflow.ClientWebSocketFlow.clientWebSocketFlow
+import prowse.github.cosm1c.healthmesh.websocketflow.WebSocketJsonSupport
+import cats.instances.all._
+import scala.concurrent.Future
 
-import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.util.Random
-
-object AppSupervisorActor {
-
-    // For demo only
-    @SuppressWarnings(Array("org.wartremover.warts.AsInstanceOf"))
-    private def addRandomNodes(agentPoolActor: ActorRef): Unit = {
-        implicit val timeout: Timeout = Timeout(1.second)
-        val numRandomNodes = 100
-        val numLevelTwoNodes = 5
-
-        def randomFlash(): Long = Random.nextInt(800) + 1200L
-
-        agentPoolActor ? BatchAgentUpdates(
-            Seq(
-                UpdateAgentConfig("A", ExampleConfig("A", "A-Label", Seq(), randomFlash())),
-                UpdateAgentConfig("B", ExampleConfig("B", "B-Label", Seq(), randomFlash())),
-                UpdateAgentConfig("C", ExampleConfig("C", "C-Label", Seq(), randomFlash())),
-                UpdateAgentConfig("D", ExampleConfig("D", "D-Label", Seq(), randomFlash())),
-                UpdateAgentConfig("E", ExampleConfig("E", "E-Label", Seq(), randomFlash())),
-                UpdateAgentConfig("F", ExampleConfig("F", "F-Label", Seq(), randomFlash()))
-            ) ++
-                (0 to numLevelTwoNodes).map { id =>
-                    UpdateAgentConfig(id.toString,
-                        ExampleConfig(
-                            id.toString,
-                            s"${id.toString}-Label",
-                            Seq[String](s"${('A' + Random.nextInt(4)).asInstanceOf[Char]}"),
-                            randomFlash()))
-                } ++
-                (numLevelTwoNodes to numRandomNodes).map { id =>
-                    UpdateAgentConfig(id.toString,
-                        ExampleConfig(
-                            id.toString,
-                            s"${id.toString}-Label",
-                            Seq[String](s"${Random.nextInt(numLevelTwoNodes)}"),
-                            randomFlash()))
-                },
-            Set[ExampleAgentId]())
-        ()
-    }
-}
-
-class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonSupport {
+class AppSupervisorActor extends Actor with ActorLogging with WebSocketJsonSupport {
 
     private implicit val actorSystem: ActorSystem = context.system
-    private implicit val executionContextExecutor: ExecutionContextExecutor = context.dispatcher
     private implicit val materializer: ActorMaterializer = ActorMaterializer()
     private implicit val clock: Clock = Clock.systemUTC()
     private implicit val httpsContext: HttpsConnectionContext = Http().createClientHttpsContext(AkkaSSLConfig().mapSettings(s => s.withLoose(s.loose.withDisableSNI(true))))
@@ -85,17 +42,26 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
     private val wsUrlResponse = HttpResponse(entity = HttpEntity(ContentTypes.`application/json`, s"""{"wsUrl":"$wsUrl"}"""))
     private val redirectRoot = redirect(Uri("/" + httpPathPrefix + "/"), StatusCodes.PermanentRedirect)
 
-    private val userCountBroadcast = new BehaviorSubjectAdapter[Int, Int](0, _ + _)
+    private val userCountFlow = new MonoidFlow[Int]
+    private val userCountQueue =
+        Source.queue(0, OverflowStrategy.backpressure)
+            .toMat(userCountFlow.inSink)(Keep.left)
+            .run()
 
-    private val membershipBroadcast = new MembershipFlow()
+    private val membershipDeltaFlow = new DeltaFlow[Map[String, NodeState], MapDelta[String, NodeState]]()
+    private val membershipDeltaQueue =
+        Source.queue(0, OverflowStrategy.backpressure)
+            .toMat(membershipDeltaFlow.inSink)(Keep.left)
+            .run()
 
-    private def agentCreator(exampleAgentConfig: ExampleConfig): ActorRef =
-        context.actorOf(ExampleAgent.props(exampleAgentConfig, membershipBroadcast.behaviourBroadcast.queue), s"ExampleAgent-${exampleAgentConfig.id}")
+    private def agentCreator(exampleAgentConfig: NodeDetails): ActorRef =
+        context.actorOf(NodeMonitorActor.props(exampleAgentConfig, membershipDeltaQueue), s"ExampleAgent-${exampleAgentConfig.id}")
 
     private val agentPoolActor = context.actorOf(AgentPoolActor.props(agentCreator), "AgentPool")
     private val agentPoolService = new AgentPoolRestService(agentPoolActor)
 
-    AppSupervisorActor.addRandomNodes(agentPoolActor)
+    // For demo only
+    context.actorOf(DemoMembershipActor.props(agentPoolActor))
 
     private val route: Route =
         encodeResponse {
@@ -105,11 +71,11 @@ class AppSupervisorActor extends Actor with ActorLogging with ExampleAgent.JsonS
             ) {
                 pathPrefix(httpPathPrefix) {
                     path("ws") {
-                        onSuccess(userCountBroadcast.queue.offer(1)) {
+                        onSuccess(userCountQueue.offer(1)) {
                             case Enqueued =>
                                 handleWebSocketMessages(
-                                    clientWebSocketFlow(userCountBroadcast.source, membershipBroadcast.behaviourBroadcast.source)
-                                        .watchTermination()((_, done) => done.foreach(_ => userCountBroadcast.queue.offer(-1))))
+                                    clientWebSocketFlow(userCountFlow.outSource, membershipDeltaFlow.outSource)
+                                        .watchTermination()((_, done) => done.foreach(_ => userCountQueue.offer(-1))(context.dispatcher)))
 
                             case QueueFailure(cause) =>
                                 log.error(cause, "Failed to enqueue websocket message - Failure")

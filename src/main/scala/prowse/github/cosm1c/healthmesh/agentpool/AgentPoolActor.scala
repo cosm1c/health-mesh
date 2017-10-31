@@ -1,61 +1,55 @@
 package prowse.github.cosm1c.healthmesh.agentpool
 
 import akka.Done
-import akka.actor.{Actor, ActorLogging, ActorRef, PoisonPill, Props, Terminated}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.http.scaladsl.marshallers.sprayjson.SprayJsonSupport
 import akka.pattern.{ask, pipe}
 import akka.util.Timeout
-import prowse.github.cosm1c.healthmesh.agentpool.ExampleAgent._
+import prowse.github.cosm1c.healthmesh.agentpool.NodeMonitorActor._
+import prowse.github.cosm1c.healthmesh.flows.MapDeltaFlow.MapDelta
 import prowse.github.cosm1c.healthmesh.util.ReplyStatus
-import spray.json.JsValue
 
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContextExecutor, Future}
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 object AgentPoolActor extends SprayJsonSupport {
 
-    def props(agentCreator: ExampleConfig => ActorRef): Props = Props(new AgentPoolActor(agentCreator))
+    def props(agentCreator: NodeDetails => ActorRef): Props =
+        Props(new AgentPoolActor(agentCreator))
 
-    val SUCCESS_DONE = Success(Done)
+    final val SUCCESS_DONE = Success(Done)
+
+    final case class MembershipDelta(members: MapDelta[String, NodeDetails])
 
     final case object FetchConfig
 
     final case object ListAgents
 
-    final case class BatchAgentUpdates(updates: Seq[UpdateAgentConfig], removes: Set[ExampleAgentId])
+    final case class AgentPollNow(id: String)
 
-    final case class UpdateAgentConfig(id: ExampleAgentId, config: ExampleConfig)
+    final case class FetchAgentConfig(agentId: String)
 
-    final case class FetchAgentConfig(id: ExampleAgentId)
-
-    final case class RemoveAgent(id: ExampleAgentId)
-
-    final case class PostAgentRequest(id: ExampleAgentId, payload: ExampleRequestPayload)
-
-    final case class PostAgentResponse(payload: ExampleResponsePayload)
-
-    final case class AgentPollNow(id: ExampleAgentId)
+    private final case class AgentRemoved(agentId: String)
 
 
-    private def lifecycleActorProps(agentId: ExampleAgentId, child: ActorRef): Props = Props(new AgentLifecycleActor(agentId, child))
+    private def lifecycleActorProps(agentId: String, child: ActorRef): Props = Props(new AgentLifecycleActor(agentId, child))
 
-    private class AgentLifecycleActor(agentId: ExampleAgentId, child: ActorRef) extends Actor with ActorLogging {
+    private class AgentLifecycleActor(agentId: String, child: ActorRef) extends Actor with ActorLogging {
 
         context.watch(child)
 
         override def receive: Receive = {
 
             case Terminated(`child`) =>
-                context.parent ! RemoveAgent(agentId)
+                context.parent ! MapDelta[String, NodeDetails](removed = Set(agentId))
                 context.stop(self)
         }
     }
 
 }
 
-// TODO: review Supervision strategies
-class AgentPoolActor(agentCreator: ExampleConfig => ActorRef) extends Actor with ActorLogging {
+class AgentPoolActor(agentCreator: NodeDetails => ActorRef) extends Actor with ActorLogging {
 
     import prowse.github.cosm1c.healthmesh.agentpool.AgentPoolActor._
 
@@ -63,7 +57,7 @@ class AgentPoolActor(agentCreator: ExampleConfig => ActorRef) extends Actor with
     private implicit val executionContext: ExecutionContextExecutor = context.dispatcher
 
     @SuppressWarnings(Array("org.wartremover.warts.Var"))
-    private var pool = Map.empty[ExampleAgentId, ActorRef]
+    private var pool = Map.empty[String, ActorRef]
 
     override def receive: Receive = {
 
@@ -77,63 +71,49 @@ class AgentPoolActor(agentCreator: ExampleConfig => ActorRef) extends Actor with
                     sender() ! ReplyStatus.Failure
             }
 
-        case PostAgentRequest(id, msg) =>
-            pool.get(id) match {
-                case Some(actorRef) =>
-                    pipe(
-                        (actorRef ? msg).mapTo[Try[JsValue]]
-                            .map(Some(_))
-                    ).to(sender())
-                    ()
+        case MembershipDelta(delta) =>
+            delta.removed
+                .map(pool.get)
+                .foreach(_.foreach(context.stop))
+            pool = pool -- delta.removed
 
-                case None => sender() ! Success(None)
+            val eventualUpdateResults = pool.keySet.intersect(delta.updated.keySet)
+                .map(id => pool(id) ? UpdateNodeDetails(delta.updated(id)))
+
+            pool = pool ++
+                delta.updated.keySet.diff(pool.keySet)
+                    .map { id =>
+                        val childAgent = agentCreator(delta.updated(id))
+                        context.actorOf(lifecycleActorProps(id, childAgent), s"AgentLifecycle-$id")
+                        id -> childAgent
+                    }
+
+            if (eventualUpdateResults.isEmpty) {
+                sender() ! ReplyStatus.Success
+
+            } else {
+                val origSender = sender()
+                Future.sequence(eventualUpdateResults)
+                    .onComplete {
+                        case Success(_) => origSender ! ReplyStatus.Success
+
+                        case Failure(_) => origSender ! ReplyStatus.Failure
+                    }
             }
 
-        case UpdateAgentConfig(id, config) =>
-            pool.get(id) match {
-                case Some(actorRef) => actorRef forward config
-
-                case None =>
-                    val childAgent = agentCreator(config)
-                    childAgent forward FetchConfig
-                    context.actorOf(lifecycleActorProps(id, childAgent), s"AgentLifecycle-$id")
-                    pool += id -> childAgent
-            }
-
-        case BatchAgentUpdates(updates, removes) =>
-            pool = pool -- removes
-            val eventualUpdateResults = updates.map(update =>
-                pool.get(update.id) match {
-                    case Some(actorRef) => (actorRef ? update.config).mapTo[Success[ExampleConfig]]
-
-                    case None =>
-                        val childAgent = agentCreator(update.config)
-                        context.actorOf(lifecycleActorProps(update.id, childAgent), s"AgentLifecycle-${update.id}")
-                        pool += update.id -> childAgent
-                        (childAgent ? FetchConfig).mapTo[Success[ExampleConfig]]
-                })
-            pipe(Future.sequence(eventualUpdateResults)).to(sender())
-            ()
+        case AgentRemoved(agentId) => pool -= agentId
 
         case FetchAgentConfig(id) =>
             pool.get(id) match {
                 case Some(actorRef) =>
                     pipe(
-                        (actorRef ? FetchConfig).mapTo[Try[ExampleConfig]]
+                        (actorRef ? FetchConfig).mapTo[Try[NodeDetails]]
                             .map(Some(_))
                     ).to(sender())
                     ()
 
                 case None => sender() ! Success(None)
             }
-
-        case RemoveAgent(id) =>
-            // TODO: revisit use of PoisonPill and RESPONSE_SUCCESS_DONE
-            pool.get(id).foreach { actorRef =>
-                actorRef ! PoisonPill
-                pool -= id
-            }
-            sender() ! SUCCESS_DONE
 
         case ListAgents => sender() ! pool.keySet
     }

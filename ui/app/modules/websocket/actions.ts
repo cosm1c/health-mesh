@@ -1,4 +1,4 @@
-import {NodeDeltasJson} from '../../NodeInfo';
+import {NodeDeltasJson} from '../../WebSocketJson';
 
 export const CONNECT_WEBSOCKET = 'CONNECT_WEBSOCKET';
 export const DISCONNECT_WEBSOCKET = 'DISCONNECT_WEBSOCKET';
@@ -12,7 +12,7 @@ export type WebSocketActions = {
   CONNECT_WEBSOCKET: { type: typeof CONNECT_WEBSOCKET, date: Date },
   DISCONNECT_WEBSOCKET: { type: typeof DISCONNECT_WEBSOCKET, date: Date },
   WEBSOCKET_CONNECTED: { type: typeof WEBSOCKET_CONNECTED, date: Date },
-  DELTA_PAYLOAD: { type: typeof DELTA_PAYLOAD, payload: NodeDeltasJson },
+  DELTA_PAYLOAD: { type: typeof DELTA_PAYLOAD, delta: NodeDeltasJson },
   USER_COUNT_PAYLOAD: { type: typeof USER_COUNT_PAYLOAD, count: number },
   KEEPALIVE_PAYLOAD: { type: typeof KEEPALIVE_PAYLOAD },
   WEBSOCKET_DISCONNECTED: { type: typeof WEBSOCKET_DISCONNECTED, date: Date },
@@ -37,9 +37,9 @@ export const actionCreators = {
     type: WEBSOCKET_DISCONNECTED as typeof WEBSOCKET_DISCONNECTED,
     date: new Date(),
   }),
-  deltaPayload: (payload: NodeDeltasJson) => ({
+  deltaPayload: (delta: NodeDeltasJson) => ({
     type: DELTA_PAYLOAD as typeof DELTA_PAYLOAD,
-    payload,
+    delta,
   }),
   keepAlivePayload: () => ({
     type: KEEPALIVE_PAYLOAD as typeof KEEPALIVE_PAYLOAD,
