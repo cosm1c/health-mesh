@@ -54,8 +54,8 @@ class AppSupervisorActor extends Actor with ActorLogging with WebSocketJsonSuppo
             .toMat(membershipDeltaFlow.inSink)(Keep.left)
             .run()
 
-    private def agentCreator(exampleAgentConfig: NodeDetails): ActorRef =
-        context.actorOf(NodeMonitorActor.props(exampleAgentConfig, membershipDeltaQueue), s"ExampleAgent-${exampleAgentConfig.id}")
+    private def agentCreator(nodeDetails: NodeDetails): ActorRef =
+        context.actorOf(NodeMonitorActor.props(nodeDetails, membershipDeltaQueue), nodeDetails.id)
 
     private val agentPoolActor = context.actorOf(AgentPoolActor.props(agentCreator), "AgentPool")
     private val agentPoolService = new AgentPoolRestService(agentPoolActor)

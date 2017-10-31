@@ -78,14 +78,14 @@ class DemoMembershipActor(poolActor: ActorRef) extends Actor with ActorLogging {
     }
 
     /*  For calculating a delta between snapshots
-        def calcDelta(prevState: Map[K, V], currState: Map[K, V]): MapDelta[K, V] = {
-            val updated = currState.filterKeys(key => {
-                val maybeV = prevState.get(key)
-                maybeV.isDefined && maybeV == currState.get(key)
-            })
-            val removedKeys = prevState.keySet.intersect(currState.keySet)
-            MapDelta(updated, removedKeys)
-        }
+    def calcDelta[K, V](prevState: Map[K, V], currState: Map[K, V]): MapDelta[K, V] = {
+        val updated = currState.filterKeys(key => {
+            val maybeV = prevState.get(key)
+            maybeV.isEmpty || maybeV != currState.get(key)
+        })
+        val removedKeys = prevState.keySet.intersect(currState.keySet)
+        MapDelta(updated, removedKeys)
+    }
     */
 
 }
